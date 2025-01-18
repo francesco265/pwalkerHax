@@ -7,9 +7,21 @@
 
 void call_poke_add_watts();
 
-static const char *g_menu_entries[] = { "Get Pokewalker data (test connection)", "Add watts" };
+// Main menu
+static const char *g_menu_entries[] = {
+	"Get Pokewalker data (test connection)",
+	"Add watts",
+	"Gift item"
+};
+void (*g_menu_functions[])(void) = {
+	poke_get_data,
+	call_poke_add_watts
+};
 static const u8 g_menu_len = sizeof(g_menu_entries) / sizeof(g_menu_entries[0]);
-void (*g_menu_functions[])(void) = { poke_get_data, call_poke_add_watts };
+
+// Currently active menu
+static const char **g_active_menu = g_menu_entries;
+
 static PrintConsole top, bottom;
 
 void print_menu(u8 selected)
@@ -19,17 +31,31 @@ void print_menu(u8 selected)
 	printf("\nActions:\n\n");
 	for (u8 i = 0; i < g_menu_len; i++) {
 		if (i == selected)
-			printf(" > %s\n", g_menu_entries[i]);
+			printf(" > %s\n", g_active_menu[i]);
 		else
-			printf(" - %s\n", g_menu_entries[i]);
+			printf(" - %s\n", g_active_menu[i]);
 	}
 	consoleSelect(&top);
 }
 
 void call_poke_add_watts()
 {
-	// TODO add selection of watts using the numpad
-	poke_add_watts(100);
+	char watts_str[5];
+	u32 watts = 0;
+	SwkbdState swkbd;
+	SwkbdButton button = SWKBD_BUTTON_NONE;
+	
+	swkbdInit(&swkbd, SWKBD_TYPE_NUMPAD, 2, 5);
+	swkbdSetHintText(&swkbd, "Enter watts to add (max 65535)");
+	swkbdSetValidation(&swkbd, SWKBD_ANYTHING, 0, 0);
+	swkbdSetFeatures(&swkbd, SWKBD_FIXED_WIDTH);
+	button = swkbdInputText(&swkbd, watts_str, sizeof(watts_str));
+
+	if (button == SWKBD_BUTTON_RIGHT) {
+		watts = atoi(watts_str);
+		watts = watts > 65535 ? 65535 : watts;
+		poke_add_watts(watts);
+	}
 }
 
 int main(int argc, char* argv[])

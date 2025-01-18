@@ -42,7 +42,7 @@ typedef struct {
 	u32 stepcount;		// Big endian
 } identity_data;
 
-// exploits taken from https://dmitry.gr/?r=05.Projects&proj=28.%20pokewalker
+// exploits from https://dmitry.gr/?r=05.Projects&proj=28.%20pokewalker
 // upload to 0xF956
 static u8 add_watts_payload[] = {
 	0x56,

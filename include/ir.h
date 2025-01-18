@@ -23,7 +23,6 @@
 
 // Initialize and exit IR
 bool ir_init(void);
-bool ir_exit(void);
 // Call these functions before and after sending/receiving data
 void ir_enable(void);
 void ir_disable(void);
