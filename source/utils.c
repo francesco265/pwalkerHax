@@ -46,7 +46,13 @@ void decode_string(char *out, const u16 *in)
 	for (i = 0; in[i] != 0xFFFF; i++) {
 		cur_char = in[i];
 		// TODO add other characters
-		if (cur_char >= 0x0121 && cur_char <= 0x012A)
+		if (cur_char >= 0x00A2 && cur_char <= 0x00AB)
+			out[i] = cur_char - 0x72;
+		else if (cur_char >= 0x00AC && cur_char <= 0x00C5)
+			out[i] = cur_char - 0x6B;
+		else if (cur_char >= 0x00C6 && cur_char <= 0x00DF)
+			out[i] = cur_char - 0x65;
+		else if (cur_char >= 0x0121 && cur_char <= 0x012A)
 			out[i] = cur_char - 0xF1;
 		else if (cur_char >= 0x012B && cur_char <= 0x0144)
 			out[i] = cur_char - 0xEA;
