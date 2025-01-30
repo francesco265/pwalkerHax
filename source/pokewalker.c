@@ -124,6 +124,33 @@ bool poke_init_session(void)
 	return true;
 }
 
+// Session must be already established
+bool poke_eeprom_write(u16 addr, const void *data, u16 size)
+{
+	poke_packet pkt_write, pkt_write_ack;
+	u8 buf[MAX_PAYLOAD_SIZE];
+	int i = 0, buf_size = 0;
+
+	while (size) {
+		buf_size = size > MAX_PAYLOAD_SIZE - 1? MAX_PAYLOAD_SIZE - 1 : size;
+
+		memcpy(buf + 1, data + i, buf_size);
+		buf[0] = addr;
+
+		create_poke_packet(&pkt_write, CMD_EEPROMWRITE, addr >> 8, buf, buf_size + 1);
+		send_pokepacket(&pkt_write);
+
+		if (!recv_pokepacket(&pkt_write_ack) || pkt_write_ack.header.opcode != CMD_EEPROMWRITE_ACK)
+			return false;
+
+		i += buf_size;
+		addr += buf_size;
+		size -= buf_size;
+	}
+
+	return true;
+}
+
 void print_identity_data(const identity_data *data)
 {
 	char trainer_name[8];
@@ -195,6 +222,53 @@ void poke_add_watts(u16 watts)
 
 	if (!recv_pokepacket(&pkt_trigger_res) || pkt_trigger_res.header.opcode != CMD_WRITE) {
 		printf("Error while triggering the exploit\n");
+		ir_disable();
+		return;
+	}
+
+	printf("SUCCESS!\n");
+
+	ir_disable();
+}
+
+void poke_gift_item(u16 item)
+{
+	poke_packet pkt_giftitem, pkt_giftitem_ack;
+	u8 item_name[384];
+	u8 item_data[8] = {0};
+
+	// Prepare data to send
+	// This must be sent to 0xBD48
+	string_to_img(item_name, 96, item_list[item], false);
+	// This must be sent to 0xBD40
+	item_data[6] = item;
+	item_data[7] = item >> 8;
+
+	ir_enable();
+
+	if (!poke_init_session()) {
+		printf("Error while establishing session\n");
+		ir_disable();
+		return;
+	}
+
+	if (!poke_eeprom_write(0xBD40, item_data, sizeof(item_data))) {
+		printf("Error while writing item data on EEPROM\n");
+		ir_disable();
+		return;
+	}
+
+	if (!poke_eeprom_write(0xBD48, item_name, sizeof(item_name))) {
+		printf("Error while writing item name bitmap on EEPROM\n");
+		ir_disable();
+		return;
+	}
+
+	create_poke_packet(&pkt_giftitem, CMD_EVENTITEM, MASTER_EXTRA, NULL, 0);
+	send_pokepacket(&pkt_giftitem);
+
+	if (!recv_pokepacket(&pkt_giftitem_ack) || pkt_giftitem_ack.header.opcode != CMD_EVENTITEM) {
+		printf("Error while triggering the item event\n");
 		ir_disable();
 		return;
 	}

@@ -6,12 +6,15 @@
 #define MAX_PACKET_SIZE (sizeof(packet_header) + MAX_PAYLOAD_SIZE)
 
 // Commands
-#define CMD_SYN		0xFA
-#define CMD_SYNACK	0xF8
-#define CMD_WRITE	0x06
-#define CMD_ASKDATA	0x20
-#define CMD_DATA	0x22
-#define CMD_DISC	0xF4
+#define CMD_SYN				0xFA
+#define CMD_SYNACK			0xF8
+#define CMD_EEPROMWRITE_ACK 0x04
+#define CMD_WRITE			0x06
+#define CMD_EEPROMWRITE		0x0A
+#define CMD_ASKDATA			0x20
+#define CMD_DATA			0x22
+#define CMD_EVENTITEM		0xC4
+#define CMD_DISC			0xF4
 
 #define MASTER_EXTRA 0x01
 #define SLAVE_EXTRA 0x02
@@ -62,3 +65,4 @@ static const char *item_list[] = {"None", "Master Ball", "Ultra Ball", "Great Ba
 
 void poke_get_data(void);
 void poke_add_watts(u16 watts);
+void poke_gift_item(u16 item);

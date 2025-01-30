@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <3ds.h>
+#include <citro2d.h>
 
 // Currently active menu
 static menu *g_active_menu = &main_menu;
@@ -87,11 +88,12 @@ void call_poke_add_watts()
 void call_poke_gift_item() {
 	u16 item = g_active_menu->entries[0].sel_menu.props.selected;
 
-	if (item)
-		//poke_gift_item(item);
-		printf("%d\n", item);
-	else
+	if (!item) {
 		printf("Please select an item\n");
+		return;
+	}
+	
+	poke_gift_item(item);
 }
 
 void open_gift_item_menu()
