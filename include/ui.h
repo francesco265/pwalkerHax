@@ -1,7 +1,33 @@
 #pragma once
 
-#include "main.h"
 #include "pokewalker.h"
+#include <citro2d.h>
+
+#define COLOR_BG	C2D_Color32(0xEE, 0x83, 0x29, 0xFF)
+#define COLOR_BG2	C2D_Color32(0xCD, 0x52, 0x41, 0xFF)
+#define COLOR_SEL	C2D_Color32(0x08, 0x41, 0x52, 0xFF)
+#define COLOR_TEXT	C2D_Color32(0xF0, 0xF0, 0xF0, 0xFF)
+#define COLOR_SB1	C2D_Color32(0x08, 0x41, 0x52, 0xFF)
+#define COLOR_SB2	C2D_Color32(0xD5, 0xD5, 0xD5, 0xFF)
+
+#define SCREEN_WIDTH 320
+#define SCREEN_HEIGHT 240
+
+void ui_init();
+void ui_exit();
+void draw_frame();
+enum operation update_ui();
+
+enum state {
+	IN_MENU,
+	IN_SELECTION,
+};
+
+enum operation {
+	OP_UPDATE,
+	OP_EXIT,
+	OP_NONE,
+};
 
 typedef struct {
 	const u16 len;
@@ -28,27 +54,3 @@ typedef struct {
 	menu_entry *entries;
 } menu;
 
-// Main menu
-menu_entry main_menu_entries[] = {
-	{"Get Pokewalker info", false, .callback = poke_get_data},
-	{"Add watts", false, .callback = call_poke_add_watts},
-	{"Gift item", false, .callback = open_gift_item_menu},
-};
-
-menu main_menu = {
-	.title = "Main menu",
-	.entries = main_menu_entries,
-	.props = {.len = sizeof(main_menu_entries) / sizeof(main_menu_entries[0]), .selected = 0},
-};
-
-// Gift item menu
-menu_entry gift_item_menu_entries[] = {
-	{"Select item", true, .sel_menu = {.options = item_list, .props = {.len = sizeof(item_list) / sizeof(item_list[0]), .selected = 0}}},
-	{"Send item", false, .callback = call_poke_gift_item},
-};
-
-menu gift_item_menu = {
-	.title = "Gift item",
-	.entries = gift_item_menu_entries,
-	.props = {.len = sizeof(gift_item_menu_entries) / sizeof(gift_item_menu_entries[0]), .selected = 0},
-};
