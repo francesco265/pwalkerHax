@@ -3,14 +3,16 @@
 #include <stdlib.h>
 
 void call_poke_add_watts();
-void open_gift_item_menu();
+void call_poke_gift_pokemon();
 void call_poke_gift_item();
+void change_menu();
 
 // Main menu
 menu_entry main_menu_entries[] = {
-	{"Get Pokewalker info", false, .callback = poke_get_data},
-	{"Add watts", false, .callback = call_poke_add_watts},
-	{"Gift item", false, .callback = open_gift_item_menu},
+	{"Get Pokewalker info", ENTRY_ACTION, .callback = poke_get_data},
+	{"Add watts", ENTRY_ACTION, .callback = change_menu},
+	{"Gift Pokemon", ENTRY_ACTION, .callback = change_menu},
+	{"Gift item", ENTRY_ACTION, .callback = change_menu},
 };
 
 menu main_menu = {
@@ -19,16 +21,49 @@ menu main_menu = {
 	.props = {.len = sizeof(main_menu_entries) / sizeof(main_menu_entries[0]), .selected = 0},
 };
 
+// Add watts menu
+menu_entry add_watts_menu_entries[] = {
+	{"Enter watts to add", ENTRY_NUMATTR, .num_attr = {.value = 100, .min = 1, .max = 65535}},
+	{"Add watts", ENTRY_ACTION, .callback = call_poke_add_watts},
+};
+
+menu add_watts_menu = {
+	.title = "Add watts",
+	.entries = add_watts_menu_entries,
+	.props = {.len = sizeof(add_watts_menu_entries) / sizeof(add_watts_menu_entries[0]), .selected = 0},
+};
+
 // Gift item menu
 menu_entry gift_item_menu_entries[] = {
-	{"Select item", true, .sel_menu = {.options = item_list, .props = {.len = sizeof(item_list) / sizeof(item_list[0]), .selected = 0}}},
-	{"Send item", false, .callback = call_poke_gift_item},
+	{"Select item", ENTRY_SELATTR, .sel_menu = {.options = item_list, .props = {.len = sizeof(item_list) / sizeof(item_list[0]), .selected = 0}}},
+	{"Send item", ENTRY_ACTION, .callback = call_poke_gift_item},
 };
 
 menu gift_item_menu = {
 	.title = "Gift item",
 	.entries = gift_item_menu_entries,
 	.props = {.len = sizeof(gift_item_menu_entries) / sizeof(gift_item_menu_entries[0]), .selected = 0},
+};
+
+// Gift Pokemon menu
+menu_entry gift_pokemon_menu_entries[] = {
+	{"Select Pokemon", ENTRY_SELATTR, .sel_menu = {.options = poke_list, .props = {.len = sizeof(poke_list) / sizeof(poke_list[0]), .selected = 0}}},
+	{"Select held item", ENTRY_SELATTR, .sel_menu = {.options = item_list, .props = {.len = sizeof(item_list) / sizeof(item_list[0]), .selected = 0}}},
+	{"Select move 1", ENTRY_SELATTR, .sel_menu = {.options = move_list, .props = {.len = sizeof(move_list) / sizeof(move_list[0]), .selected = 0}}},
+	{"Select move 2", ENTRY_SELATTR, .sel_menu = {.options = move_list, .props = {.len = sizeof(move_list) / sizeof(move_list[0]), .selected = 0}}},
+	{"Select move 3", ENTRY_SELATTR, .sel_menu = {.options = move_list, .props = {.len = sizeof(move_list) / sizeof(move_list[0]), .selected = 0}}},
+	{"Select move 4", ENTRY_SELATTR, .sel_menu = {.options = move_list, .props = {.len = sizeof(move_list) / sizeof(move_list[0]), .selected = 0}}},
+	{"Select level", ENTRY_NUMATTR, .num_attr = {.value = 50, .min = 1, .max = 100}},
+	{"Gender", ENTRY_SELATTR, .sel_menu = {.options = gender_list, .props = {.len = 2, .selected = 0}}},
+	{"Shiny", ENTRY_SELATTR, .sel_menu = {.options = yn_list, .props = {.len = 2, .selected = 0}}},
+	{"Select ability", ENTRY_SELATTR, .sel_menu = {.options = ability_list, .props = {.len = sizeof(ability_list) / sizeof(ability_list[0]), .selected = 0}}},
+	{"Send Pokemon", ENTRY_ACTION, .callback = call_poke_gift_pokemon},
+};
+
+menu gift_pokemon_menu = {
+	.title = "Gift Pokemon",
+	.entries = gift_pokemon_menu_entries,
+	.props = {.len = sizeof(gift_pokemon_menu_entries) / sizeof(gift_pokemon_menu_entries[0]), .selected = 0},
 };
 
 // Currently active menu
@@ -65,6 +100,7 @@ void draw_string(float x, float y, float size, const char *str, bool centered, i
 	C2D_TextParse(&text, textbuf, str);
 	scale = size / 30;
 	x = centered ? (SCREEN_WIDTH - text.width * scale) / 2 : x;
+	x = x < 0 ? SCREEN_WIDTH - text.width * scale + x : x;
 	C2D_TextOptimize(&text);
 	C2D_DrawText(&text, C2D_WithColor | flags, x, y, 0.0f, scale, scale, COLOR_TEXT);
 }
@@ -76,98 +112,127 @@ void draw_top(const char *str)
 	draw_string(0, 5, 20, str, true, 0);
 
 }
-
-void draw_menu()
-{
-	C2D_Text text_dx;
-	draw_top(g_active_menu->title);
-
-	// Text starts at y = 30, 15px font height and 5px padding top and bottom
-	for (u16 i = 0; i < g_active_menu->props.len; i++) {
-
-		// Highlight selected entry
-		if (i == g_active_menu->props.selected)
-			C2D_DrawRectSolid(3,
-					33.0f + i * 25, 0,
-					SCREEN_WIDTH - 6,
-					19, COLOR_SEL);
-			
-		draw_string(15, 35.0f + i * 25, 15, g_active_menu->entries[i].text, false, 0);
-
-		if (g_active_menu->entries[i].is_selection) {
-			C2D_TextParse(&text_dx, textbuf, g_active_menu->entries[i].sel_menu.options[g_active_menu->entries[i].sel_menu.props.selected]);
-			C2D_TextOptimize(&text_dx);
-			C2D_DrawText(&text_dx, C2D_WithColor, SCREEN_WIDTH - text_dx.width * 0.5 - 15, 35.0f + i * 25, 0.0f, 0.5f, 0.5f, COLOR_TEXT);
-		}
-	}
-}
-
 void draw_scrollbar(u16 first, u16 last, u16 total)
 {
 	float height = SCREEN_HEIGHT - 36;
 	float width = 10;
 	float scroll_start = ceil(((height - 4) / total) * first);
-	float scroll_height = ceil(((height - 4) / total) * (last - first));
+	float scroll_height = ceil(((height - 4) / total) * (last - first + 1));
 
+	// The scrollbar has a width of 10 and is placed 3 pixels from the right edge
 	C2D_DrawRectSolid(SCREEN_WIDTH - width - 3, 33, 0, width, height, COLOR_SB2);
 	C2D_DrawRectSolid(SCREEN_WIDTH - 8 - 4, 35 + scroll_start, 0, 8, scroll_height, COLOR_SB1);
 }
 
-void draw_selection_menu()
+void draw_menu(u16 font_size, u16 padding, menu_properties props)
 {
-	u16 avail_lines, cur, line, first, draw_start;
-	char strbuf[10];
-	selection_menu *sel_menu = &g_active_menu->entries[g_active_menu->props.selected].sel_menu;
+	u16 avail_lines, cur, line, first, draw_start, height;
+	char strbuf[20];
+	selection_menu *sel_menu;
 
-	draw_top(g_active_menu->entries[g_active_menu->props.selected].text);
+	if (g_state == IN_SELECTION)
+		draw_top(g_active_menu->entries[g_active_menu->props.selected].text);
+	else
+		draw_top(g_active_menu->title);
 
-	// 12px font height and 3px padding top and bottom
-	avail_lines = (SCREEN_HEIGHT - 30) / 18;
-	cur = sel_menu->props.selected - (avail_lines / 2) > 0 ? sel_menu->props.selected - (avail_lines / 2) : 0;
-	draw_start = 30 + (SCREEN_HEIGHT - 30 - avail_lines * 18) / 2;
+	height = font_size + padding * 2;
+	avail_lines = (SCREEN_HEIGHT - 30) / height;
+	cur = props.selected - (avail_lines / 2) > 0 ? props.selected - (avail_lines / 2) : 0;
+	draw_start = 30 + (SCREEN_HEIGHT - 30 - avail_lines * height) / 2;
 
-	if ((sel_menu->props.len - cur) < avail_lines)
-		cur = sel_menu->props.len - avail_lines > 0 ? sel_menu->props.len - avail_lines : 0;
+	if ((props.len - cur) < avail_lines)
+		cur = props.len - avail_lines > 0 ? props.len - avail_lines : 0;
 	first = cur;
 
 	line = 0;
-	while (cur < sel_menu->props.len && line < avail_lines) {
-
-		if (cur == sel_menu->props.selected)
+	while (cur < props.len && line < avail_lines) {
+		if (cur == props.selected) {
+			u16 w = props.len > avail_lines ? 19 : 6;
 			C2D_DrawRectSolid(3,
-					draw_start + line * 18, 0,
-					SCREEN_WIDTH - 6,
-					14, COLOR_SEL);
+					draw_start + padding - (int) (padding / 2), 0,
+					SCREEN_WIDTH - w,
+					font_size + 2 * (int) (padding / 2), COLOR_SEL);
+		}
 
-		sprintf(strbuf, "%03d", cur);
-		draw_string(6, draw_start + 2 + line * 18, 12, strbuf, false, 0);
-		draw_string(0, draw_start + 2 + line * 18, 12, sel_menu->options[cur], true, 0);
+		if (g_state == IN_SELECTION) {
+			sel_menu = &g_active_menu->entries[g_active_menu->props.selected].sel_menu;
+			sprintf(strbuf, "%03d", cur);
+			draw_string(6, draw_start + padding, font_size, strbuf, false, 0);
+			draw_string(0, draw_start + padding, font_size, sel_menu->options[cur], true, 0);
+		} else {
+			draw_string(15, draw_start + padding, font_size, g_active_menu->entries[cur].text, false, 0);
+
+			switch (g_active_menu->entries[cur].type) {
+				case ENTRY_SELATTR:
+					draw_string(-21, draw_start + padding, font_size, g_active_menu->entries[cur].sel_menu.options[g_active_menu->entries[cur].sel_menu.props.selected], false, 0);
+					break;
+				case ENTRY_NUMATTR:
+					sprintf(strbuf, "%d", g_active_menu->entries[cur].num_attr.value);
+					draw_string(-21, draw_start + padding, font_size, strbuf, false, 0);
+					break;
+			}
+		}
 
 		cur++;
 		line++;
+		draw_start += height;
 	}
 
-	draw_scrollbar(first, cur - 1, sel_menu->props.len);
+	if (props.len > avail_lines)
+		draw_scrollbar(first, cur - 1, props.len);
+}
+
+void set_numattr(menu_entry *entry)
+{
+	char strbuf[64];
+	u32 value = 0;
+	SwkbdState swkbd;
+	SwkbdButton button = SWKBD_BUTTON_NONE;
+	
+	sprintf(strbuf, "%s (max %d)", entry->text, entry->num_attr.max);
+	swkbdInit(&swkbd, SWKBD_TYPE_NUMPAD, 2, 5);
+	swkbdSetHintText(&swkbd, strbuf);
+	swkbdSetValidation(&swkbd, SWKBD_NOTBLANK_NOTEMPTY, 0, 0);
+	swkbdSetFeatures(&swkbd, SWKBD_FIXED_WIDTH);
+	button = swkbdInputText(&swkbd, strbuf, sizeof(strbuf));
+
+	if (button == SWKBD_BUTTON_RIGHT) {
+		value = atoi(strbuf);
+		value = value > entry->num_attr.max ? entry->num_attr.max : value;
+		value = value < entry->num_attr.min ? entry->num_attr.min : value;
+		entry->num_attr.value = value;
+	}
 }
 
 void call_poke_add_watts()
 {
-	char watts_str[5];
-	u32 watts = 0;
-	SwkbdState swkbd;
-	SwkbdButton button = SWKBD_BUTTON_NONE;
-	
-	swkbdInit(&swkbd, SWKBD_TYPE_NUMPAD, 2, 5);
-	swkbdSetHintText(&swkbd, "Enter watts to add (max 65535)");
-	swkbdSetValidation(&swkbd, SWKBD_ANYTHING, 0, 0);
-	swkbdSetFeatures(&swkbd, SWKBD_FIXED_WIDTH);
-	button = swkbdInputText(&swkbd, watts_str, sizeof(watts_str));
+	u16 watts = g_active_menu->entries[0].num_attr.value;
+	printf("Adding %d watts\n", watts);
+	poke_add_watts(watts);
+}
 
-	if (button == SWKBD_BUTTON_RIGHT) {
-		watts = atoi(watts_str);
-		watts = watts > 65535 ? 65535 : watts;
-		poke_add_watts(watts);
+void call_poke_gift_pokemon()
+{
+	pokemon_data poke_data = { 0 };
+	pokemon_extradata poke_extra = { 0 };
+
+	poke_data.poke = g_active_menu->entries[0].sel_menu.props.selected;
+	poke_data.held_item = g_active_menu->entries[1].sel_menu.props.selected;
+	for (u8 i = 0; i < 4; i++)
+		poke_data.moves[i] = g_active_menu->entries[i + 2].sel_menu.props.selected;
+	poke_data.level = g_active_menu->entries[6].num_attr.value;
+	poke_data.variants = g_active_menu->entries[7].sel_menu.props.selected == 1 ? 0x20 : 0;
+	poke_data.flags = g_active_menu->entries[8].sel_menu.props.selected == 1 ? 0x02 : 0;
+
+	poke_extra.location_met = 2008; // Distant land
+	poke_extra.pokeball_type = 4;	// Pokeball
+	poke_extra.ability = g_active_menu->entries[9].sel_menu.props.selected;
+
+	if (!poke_data.poke || !poke_data.moves[0]) {
+		printf("Please select a Pokemon and at least one move\n");
+		return;
 	}
+	poke_gift_pokemon(poke_data, poke_extra);
 }
 
 void call_poke_gift_item() {
@@ -177,15 +242,23 @@ void call_poke_gift_item() {
 		printf("Please select an item\n");
 		return;
 	}
-	
 	poke_gift_item(item);
 }
 
-void open_gift_item_menu()
+void change_menu()
 {
-	g_active_menu = &gift_item_menu;
+	switch (g_active_menu->props.selected) {
+		case 1:
+			g_active_menu = &add_watts_menu;
+			break;
+		case 2:
+			g_active_menu = &gift_pokemon_menu;
+			break;
+		case 3:
+			g_active_menu = &gift_item_menu;
+			break;
+	}
 	g_active_menu->props.selected = 0;
-	//print_menu();
 }
 
 void move_selection(const s16 offset)
@@ -204,7 +277,7 @@ void move_selection(const s16 offset)
 	props->selected = new_selected;
 }
 
-void draw_frame()
+void ui_draw()
 {
 	C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
 
@@ -212,14 +285,14 @@ void draw_frame()
 	C2D_SceneBegin(target);
 
 	if (g_state == IN_SELECTION)
-		draw_selection_menu();
+		draw_menu(12, 3, g_active_menu->entries[g_active_menu->props.selected].sel_menu.props);
 	else
-		draw_menu();
+		draw_menu(15, 5, g_active_menu->props);
 
 	C3D_FrameEnd(0);
 }
 
-enum operation update_ui()
+enum operation ui_update()
 {
 	static u16 old_selected = 0;
 
@@ -247,13 +320,19 @@ enum operation update_ui()
 				// We are in a selection menu
 				g_state = IN_MENU;
 				old_selected = 0;
-			} else if (g_active_menu->entries[g_active_menu->props.selected].is_selection) {
-				// We are about to enter a selection menu
-				old_selected = g_active_menu->entries[g_active_menu->props.selected].sel_menu.props.selected;
-				g_state = IN_SELECTION;
 			} else {
-				// We are about to call a function
-				g_active_menu->entries[g_active_menu->props.selected].callback();
+				switch (g_active_menu->entries[g_active_menu->props.selected].type) {
+					case ENTRY_ACTION:
+						g_active_menu->entries[g_active_menu->props.selected].callback();
+						break;
+					case ENTRY_SELATTR:
+						old_selected = g_active_menu->entries[g_active_menu->props.selected].sel_menu.props.selected;
+						g_state = IN_SELECTION;
+						break;
+					case ENTRY_NUMATTR:
+						set_numattr(&g_active_menu->entries[g_active_menu->props.selected]);
+						break;
+				}
 			}
 			return OP_UPDATE;
 		} else if (kDown & KEY_B) {

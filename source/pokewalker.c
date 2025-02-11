@@ -56,7 +56,7 @@ void create_poke_packet(poke_packet *out, u8 opcode, u8 extra, const u8 *payload
 
 void send_pokepacket(poke_packet *pkt)
 {
-	pkt->header.checksum = convert_endian16(pkt->header.checksum);
+	pkt->header.checksum = swap16(pkt->header.checksum);
 	xor_data(pkt, sizeof(packet_header) + pkt->payload_size);
 	ir_send_data(pkt, sizeof(packet_header) + pkt->payload_size);
 }
@@ -77,7 +77,7 @@ bool recv_pokepacket(poke_packet *pkt)
 	// Validate checksum
 	checksum = pkt->header.checksum;
 	pkt->header.checksum = 0;
-	if (convert_endian16(checksum) != compute_checksum(pkt))
+	if (swap16(checksum) != compute_checksum(pkt))
 		return false;
 	pkt->header.checksum = checksum;
 
@@ -118,7 +118,7 @@ bool poke_init_session(void)
 	}
 
 	// Compute session id
-	//inited_session_id = convert_endian32(inited_session_id) ^ pkt_synack.header.session_id;
+	//inited_session_id = swap32(inited_session_id) ^ pkt_synack.header.session_id;
 	inited_session_id = inited_session_id ^ pkt_synack.header.session_id;
 
 	return true;
@@ -162,8 +162,8 @@ void print_identity_data(const identity_data *data)
 	printf("Trainer SID: %04X\n", data->trainer_sid);
 	printf("Is paired: %s\n", data->flags & BIT(0) ? "yes" : "no");
 	printf("Has pokemon: %s\n", data->flags & BIT(1) ? "yes" : "no");
-	printf("Last sync time: %lu\n", convert_endian32(data->last_synctime));
-	printf("Step count: %lu\n", convert_endian32(data->stepcount));
+	printf("Last sync time: %u\n", swap32(data->last_synctime));
+	printf("Step count: %u\n", swap32(data->stepcount));
 }
 
 void poke_get_data(void)
@@ -269,6 +269,85 @@ void poke_gift_item(u16 item)
 
 	if (!recv_pokepacket(&pkt_giftitem_ack) || pkt_giftitem_ack.header.opcode != CMD_EVENTITEM) {
 		printf("Error while triggering the item event\n");
+		ir_disable();
+		return;
+	}
+
+	printf("SUCCESS!\n");
+
+	ir_disable();
+}
+
+void poke_gift_pokemon(pokemon_data poke_data, pokemon_extradata poke_extra)
+{
+	poke_packet pkt_req, pkt_idata, pkt_ack;
+	identity_data *idata;
+	u8 animation[384], poke_name[320];
+	char poke_str[24];
+
+	string_upper(poke_str, poke_list[poke_data.poke]);
+	// temporary
+	memset(animation, 0, 192);
+	memset(animation + 192, 0xFF, 192);
+	string_to_img(poke_name, 80, poke_str, false);
+
+
+	ir_enable();
+
+	if (!poke_init_session()) {
+		printf("Error while establishing session\n");
+		ir_disable();
+		return;
+	}
+
+	// Get identity data
+	create_poke_packet(&pkt_req, CMD_ASKDATA, MASTER_EXTRA, NULL, 0);
+	send_pokepacket(&pkt_req);
+
+	if (!recv_pokepacket(&pkt_idata) || pkt_idata.header.opcode != CMD_DATA) {
+		printf("Error while receiving identity_data\n");
+		ir_disable();
+		return;
+	}
+	idata = (identity_data *) pkt_idata.payload;
+
+	// Write pokemon_data struct to 0xBA44
+	if (!poke_eeprom_write(0xBA44, &poke_data, sizeof(pokemon_data))) {
+		printf("Error while writing pokemon_data on EEPROM\n");
+		ir_disable();
+		return;
+	}
+
+	// Write pokemon_extradata struct to 0xBA54
+	poke_extra.ot_tid = idata->trainer_tid;
+	poke_extra.ot_sid = idata->trainer_sid;
+	memcpy(poke_extra.trainer_name, idata->trainer_name, sizeof(poke_extra.trainer_name));
+	if (!poke_eeprom_write(0xBA54, &poke_extra, sizeof(pokemon_extradata))) {
+		printf("Error while writing pokemon_extradata on EEPROM\n");
+		ir_disable();
+		return;
+	}
+
+	// Write animation to 0xBA80
+	if (!poke_eeprom_write(0xBA80, animation, sizeof(animation))) {
+		printf("Error while writing animation on EEPROM\n");
+		ir_disable();
+		return;
+	}
+
+	// Write pokemon name image to 0xBC00
+	if (!poke_eeprom_write(0xBC00, poke_name, sizeof(poke_name))) {
+		printf("Error while writing pokemon name on EEPROM\n");
+		ir_disable();
+		return;
+	}
+
+	// Finally, trigger the event
+	create_poke_packet(&pkt_req, CMD_EVENTPOKE, MASTER_EXTRA, NULL, 0);
+	send_pokepacket(&pkt_req);
+
+	if (!recv_pokepacket(&pkt_ack) || pkt_ack.header.opcode != CMD_EVENTPOKE) {
+		printf("Error while triggering the pokemon event\n");
 		ir_disable();
 		return;
 	}

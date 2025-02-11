@@ -13,17 +13,17 @@ int main(int argc, char* argv[])
 	ui_init();
 	ir_init();
 
-	draw_frame();
+	printf("pwalkerHax v0.1\n\n");
+	ui_draw();
 	while (aptMainLoop()) {
-		op = update_ui();
+		op = ui_update();
 		if (op == OP_EXIT)
 			break;
 		else if (op == OP_UPDATE)
-			draw_frame();
+			ui_draw();
 	}
 
 	ui_exit();
 	gfxExit();
 	return 0;
 }
-

@@ -15,8 +15,8 @@
 
 void ui_init();
 void ui_exit();
-void draw_frame();
-enum operation update_ui();
+void ui_draw();
+enum operation ui_update();
 
 enum state {
 	IN_MENU,
@@ -27,6 +27,12 @@ enum operation {
 	OP_UPDATE,
 	OP_EXIT,
 	OP_NONE,
+};
+
+enum entry_type {
+	ENTRY_ACTION,
+	ENTRY_SELATTR,
+	ENTRY_NUMATTR,
 };
 
 typedef struct {
@@ -41,10 +47,15 @@ typedef struct {
 
 typedef struct {
 	const char *text;
-	const bool is_selection;
+	const enum entry_type type;
 	union {
 		void (*callback)(void);
 		selection_menu sel_menu;
+		struct {
+			u16 value;
+			u16 min;
+			u16 max;
+		} num_attr;
 	};
 } menu_entry;
 

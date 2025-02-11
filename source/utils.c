@@ -1,14 +1,15 @@
 #include "utils.h"
 #include "font.h"
 #include <string.h>
+#include <ctype.h>
 #include <errno.h>
 
-u16 convert_endian16(u16 value)
+u16 swap16(u16 value)
 {
 	return ((value & 0xFF) << 8) | ((value & 0xFF00) >> 8);
 }
 
-u32 convert_endian32(u32 value)
+u32 swap32(u32 value)
 {
 	return ((value & 0xFF) << 24) | ((value & 0xFF00) << 8) | ((value & 0xFF0000) >> 8) | ((value & 0xFF000000) >> 24);
 }
@@ -113,4 +114,11 @@ void string_to_img(void *dst, const u8 width, const char *str, bool centered) {
 	render_string(dst, width, str, start_x + 1, 1, 1);
 	render_string(dst, width, str, start_x, 1, 1);
 	render_string(dst, width, str, start_x, 0, 3);
+}
+
+void string_upper(char *dst, const char *src)
+{
+	while (*src)
+		*dst++ = toupper((int) *src++);
+	*dst = 0;
 }
