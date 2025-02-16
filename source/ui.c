@@ -1,5 +1,4 @@
 #include "ui.h"
-#include "i2c.h" // TODO remove
 #include <stdlib.h>
 
 void call_poke_add_watts();
@@ -343,29 +342,10 @@ enum operation ui_update()
 			} else {
 				g_active_menu = &main_menu;
 				consoleClear();
-				printf("pwalkerHax v0.1\n\n");
+				printf("pwalkerHax v%s\n\n", VER);
 			}
 			return OP_UPDATE;
-		} else if (kDown & KEY_X) {
-			// TODO remove
-			consoleClear();
-			// Print I2C registers
-			for (u8 reg = 0x08; reg <= 0x78; reg += 0x08) {
-				if (reg == 0x68)
-					continue;
-				u8 val = I2C_read(reg);
-				printf("reg: 0x%02X, val: 0x%02X\n", reg, val);
-			}
-			u8 lcr = I2C_read(0x18);
-			I2C_write(0x18, 0xBF);
-			printf("efr: 0x%02X\n", I2C_read(0x10));
-			for (u8 reg = 0x20; reg <= 0x38; reg += 0x08) {
-				u8 val = I2C_read(reg);
-				printf("reg: 0x%02X, val: 0x%02X\n", reg, val);
-			}
-			I2C_write(0x18, lcr);
-			printf("-------------\n");
-		}
+		} 
 	}
 	return OP_NONE;
 }

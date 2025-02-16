@@ -13,7 +13,7 @@ int main(int argc, char* argv[])
 	ui_init();
 	ir_init();
 
-	printf("pwalkerHax v0.1\n\n");
+	printf("pwalkerHax v%s\n\n", VER);
 	ui_draw();
 	while (aptMainLoop()) {
 		op = ui_update();

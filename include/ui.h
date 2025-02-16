@@ -13,6 +13,8 @@
 #define SCREEN_WIDTH 320
 #define SCREEN_HEIGHT 240
 
+#define VER	"1.0"
+
 void ui_init();
 void ui_exit();
 void ui_draw();
