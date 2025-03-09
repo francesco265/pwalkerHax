@@ -38,6 +38,8 @@ DATA		:=	data
 INCLUDES	:=	include
 GRAPHICS	:=	gfx
 GFXBUILD	:=	$(BUILD)
+APP_DESCRIPTION := Pokewalker hacking tool
+APP_AUTHOR	:=	francesco265
 #ROMFS		:=	romfs
 #GFXBUILD	:=	$(ROMFS)/gfx
 

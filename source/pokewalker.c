@@ -168,7 +168,7 @@ void print_identity_data(const identity_data *data)
 
 void poke_get_data(void)
 {
-	poke_packet pkt_askdata, pkt_data, pkt_disconnect;
+	poke_packet pkt_req, pkt_idata;
 
 	ir_enable();
 
@@ -178,26 +178,27 @@ void poke_get_data(void)
 		return;
 	}
 
-	create_poke_packet(&pkt_askdata, CMD_ASKDATA, MASTER_EXTRA, NULL, 0);
-	send_pokepacket(&pkt_askdata);
+	create_poke_packet(&pkt_req, CMD_ASKDATA, MASTER_EXTRA, NULL, 0);
+	send_pokepacket(&pkt_req);
 
-	if (!recv_pokepacket(&pkt_data) || pkt_data.header.opcode != CMD_DATA) {
+	if (!recv_pokepacket(&pkt_idata) || pkt_idata.header.opcode != CMD_DATA) {
 		printf("Error while receiving identity_data\n");
 		ir_disable();
 		return;
 	}
 
-	create_poke_packet(&pkt_disconnect, CMD_DISC, MASTER_EXTRA, NULL, 0);
-	send_pokepacket(&pkt_disconnect);
+	create_poke_packet(&pkt_req, CMD_DISC, MASTER_EXTRA, NULL, 0);
+	send_pokepacket(&pkt_req);
 
-	print_identity_data((identity_data *) pkt_data.payload);
+	print_identity_data((identity_data *) pkt_idata.payload);
 
 	ir_disable();
 }
 
 void poke_add_watts(u16 watts)
 {
-	poke_packet pkt_addwatts, pkt_addwatts_res, pkt_trigger, pkt_trigger_res;
+	//poke_packet pkt_addwatts, pkt_addwatts_res, pkt_trigger, pkt_trigger_res;
+	poke_packet pkt_req, pkt_ack;
 
 	ir_enable();
 
@@ -208,19 +209,19 @@ void poke_add_watts(u16 watts)
 	}
 
 	set_watts(watts);
-	create_poke_packet(&pkt_addwatts, CMD_WRITE, 0xF9, add_watts_payload, sizeof(add_watts_payload));
-	send_pokepacket(&pkt_addwatts);
+	create_poke_packet(&pkt_req, CMD_WRITE, 0xF9, add_watts_payload, sizeof(add_watts_payload));
+	send_pokepacket(&pkt_req);
 
-	if (!recv_pokepacket(&pkt_addwatts_res) || pkt_addwatts_res.header.opcode != CMD_WRITE) {
+	if (!recv_pokepacket(&pkt_ack) || pkt_ack.header.opcode != CMD_WRITE) {
 		printf("Error while sending exploit\n");
 		ir_disable();
 		return;
 	}
 
-	create_poke_packet(&pkt_trigger, CMD_WRITE, 0xF7, trigger_exploit, sizeof(trigger_exploit));
-	send_pokepacket(&pkt_trigger);
+	create_poke_packet(&pkt_req, CMD_WRITE, 0xF7, trigger_exploit, sizeof(trigger_exploit));
+	send_pokepacket(&pkt_req);
 
-	if (!recv_pokepacket(&pkt_trigger_res) || pkt_trigger_res.header.opcode != CMD_WRITE) {
+	if (!recv_pokepacket(&pkt_ack) || pkt_ack.header.opcode != CMD_WRITE) {
 		printf("Error while triggering the exploit\n");
 		ir_disable();
 		return;
@@ -233,7 +234,7 @@ void poke_add_watts(u16 watts)
 
 void poke_gift_item(u16 item)
 {
-	poke_packet pkt_giftitem, pkt_giftitem_ack;
+	poke_packet pkt_req, pkt_ack;
 	u8 item_name[384];
 	u8 item_data[8] = {0};
 
@@ -264,10 +265,10 @@ void poke_gift_item(u16 item)
 		return;
 	}
 
-	create_poke_packet(&pkt_giftitem, CMD_EVENTITEM, MASTER_EXTRA, NULL, 0);
-	send_pokepacket(&pkt_giftitem);
+	create_poke_packet(&pkt_req, CMD_EVENTITEM, MASTER_EXTRA, NULL, 0);
+	send_pokepacket(&pkt_req);
 
-	if (!recv_pokepacket(&pkt_giftitem_ack) || pkt_giftitem_ack.header.opcode != CMD_EVENTITEM) {
+	if (!recv_pokepacket(&pkt_ack) || pkt_ack.header.opcode != CMD_EVENTITEM) {
 		printf("Error while triggering the item event\n");
 		ir_disable();
 		return;
