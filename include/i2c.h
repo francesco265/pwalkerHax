@@ -1,3 +1,6 @@
+/*
+ * Adapted from https://github.com/profi200/libn3ds/blob/master/include/arm11/drivers/i2c.h
+ */
 #pragma once
 
 #include <3ds/types.h>

@@ -1,8 +1,6 @@
 # pwalkerHax
 
-A port of Dmitry's work on [Pokewalker hacking](https://dmitry.gr/?r=05.Projects&proj=28.%20pokewalker) as an homebrew application for the Nintendo 3DS.
-
-It is essentially an hacking tool for the Pokewalker that uses the 3DS's infrared transceiver to communicate with the device.
+An hacking tool for the Pokewalker written as a 3DS homebrew application that uses the built-in infrared transceiver to communicate with the Pokewalker.
 
 ## Current Features
 
@@ -25,6 +23,4 @@ The only requirement to build this project is to have the [libctru](https://gith
 
 ## Credits
 
-This code is just a port of Dmitry's amazing work, for which he originally developed a running demo for PalmOS devices.
-
-TODO
+This code is just a port of Dmitry's amazing [work](https://dmitry.gr/?r=05.Projects&proj=28.%20pokewalker), for which he originally developed a running demo for PalmOS devices. He reverse-engineered the Pokewalker's protocol and created all the exploits, i just ported his work to the 3DS.
