@@ -33,6 +33,7 @@ enum operation {
 
 enum entry_type {
 	ENTRY_ACTION,
+	ENTRY_CHANGEMENU,
 	ENTRY_SELATTR,
 	ENTRY_NUMATTR,
 };
@@ -47,11 +48,14 @@ typedef struct {
 	const char **options;
 } selection_menu;
 
+typedef struct menu menu;
+
 typedef struct {
 	const char *text;
 	const enum entry_type type;
 	union {
 		void (*callback)(void);
+		menu *new_menu;
 		selection_menu sel_menu;
 		struct {
 			u16 value;
@@ -61,7 +65,7 @@ typedef struct {
 	};
 } menu_entry;
 
-typedef struct {
+typedef struct menu {
 	menu_properties props;
 	const char *title;
 	menu_entry *entries;

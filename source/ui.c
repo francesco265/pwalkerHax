@@ -6,20 +6,6 @@ void call_poke_gift_pokemon();
 void call_poke_gift_item();
 void change_menu();
 
-// Main menu
-menu_entry main_menu_entries[] = {
-	{"Get Pokewalker info", ENTRY_ACTION, .callback = poke_get_data},
-	{"Add watts", ENTRY_ACTION, .callback = change_menu},
-	{"Gift Pokemon", ENTRY_ACTION, .callback = change_menu},
-	{"Gift item", ENTRY_ACTION, .callback = change_menu},
-};
-
-menu main_menu = {
-	.title = "Main menu",
-	.entries = main_menu_entries,
-	.props = {.len = sizeof(main_menu_entries) / sizeof(main_menu_entries[0]), .selected = 0},
-};
-
 // Add watts menu
 menu_entry add_watts_menu_entries[] = {
 	{"Enter watts to add", ENTRY_NUMATTR, .num_attr = {.value = 100, .min = 1, .max = 65535}},
@@ -64,6 +50,21 @@ menu gift_pokemon_menu = {
 	.entries = gift_pokemon_menu_entries,
 	.props = {.len = sizeof(gift_pokemon_menu_entries) / sizeof(gift_pokemon_menu_entries[0]), .selected = 0},
 };
+//
+// Main menu
+menu_entry main_menu_entries[] = {
+	{"Get Pokewalker info", ENTRY_ACTION, .callback = poke_get_data},
+	{"Add watts", ENTRY_CHANGEMENU, .new_menu = &add_watts_menu},
+	{"Gift Pokemon", ENTRY_CHANGEMENU, .new_menu = &gift_pokemon_menu},
+	{"Gift item", ENTRY_CHANGEMENU, .new_menu = &gift_item_menu}
+};
+
+menu main_menu = {
+	.title = "Main menu",
+	.entries = main_menu_entries,
+	.props = {.len = sizeof(main_menu_entries) / sizeof(main_menu_entries[0]), .selected = 0},
+};
+
 
 // Currently active menu
 static menu *g_active_menu = &main_menu;
@@ -196,6 +197,7 @@ s32 numpad_input(const char *hint_text, u8 digits)
 	return button == SWKBD_BUTTON_RIGHT ? atoi(buf) : -1;
 }
 
+// menu_entry must be of type ENTRY_SELATTR
 void goto_item(menu_entry *entry)
 {
 	char str[] = "Go to item";
@@ -205,6 +207,7 @@ void goto_item(menu_entry *entry)
 		entry->sel_menu.props.selected = value;
 }
 
+// menu_entry must be of type ENTRY_NUMATTR
 void set_numattr(menu_entry *entry)
 {
 	char strbuf[64];
@@ -261,22 +264,6 @@ void call_poke_gift_item() {
 	poke_gift_item(item);
 }
 
-void change_menu()
-{
-	switch (g_active_menu->props.selected) {
-		case 1:
-			g_active_menu = &add_watts_menu;
-			break;
-		case 2:
-			g_active_menu = &gift_pokemon_menu;
-			break;
-		case 3:
-			g_active_menu = &gift_item_menu;
-			break;
-	}
-	g_active_menu->props.selected = 0;
-}
-
 void move_selection(const s16 offset)
 {
 	menu_properties *props;
@@ -310,6 +297,7 @@ void ui_draw()
 
 enum operation ui_update()
 {
+	menu_entry *selected_entry = &g_active_menu->entries[g_active_menu->props.selected];
 	static u16 old_selected = 0;
 
 	gspWaitForVBlank();
@@ -321,42 +309,40 @@ enum operation ui_update()
 			return OP_EXIT;
 		} else if (kDown & KEY_UP) {
 			move_selection(-1);
-			return OP_UPDATE;
 		} else if (kDown & KEY_DOWN) {
 			move_selection(1);
-			return OP_UPDATE;
 		} else if (kDown & KEY_LEFT && g_state == IN_SELECTION) {
 			move_selection(-10);
-			return OP_UPDATE;
 		} else if (kDown & KEY_RIGHT && g_state == IN_SELECTION) {
 			move_selection(10);
-			return OP_UPDATE;
 		} else if (kDown & KEY_Y && g_state == IN_SELECTION) {
-			goto_item(&g_active_menu->entries[g_active_menu->props.selected]);
-			return OP_UPDATE;
+			goto_item(selected_entry);
 		} else if (kDown & KEY_A) {
 			if (g_state == IN_SELECTION) {
 				// We are in a selection menu
 				g_state = IN_MENU;
 				old_selected = 0;
 			} else {
-				switch (g_active_menu->entries[g_active_menu->props.selected].type) {
+				switch (selected_entry->type) {
 					case ENTRY_ACTION:
-						g_active_menu->entries[g_active_menu->props.selected].callback();
+						selected_entry->callback();
+						break;
+					case ENTRY_CHANGEMENU:
+						g_active_menu = selected_entry->new_menu;
+						g_active_menu->props.selected = 0;
 						break;
 					case ENTRY_SELATTR:
-						old_selected = g_active_menu->entries[g_active_menu->props.selected].sel_menu.props.selected;
+						old_selected = selected_entry->sel_menu.props.selected;
 						g_state = IN_SELECTION;
 						break;
 					case ENTRY_NUMATTR:
-						set_numattr(&g_active_menu->entries[g_active_menu->props.selected]);
+						set_numattr(selected_entry);
 						break;
 				}
 			}
-			return OP_UPDATE;
 		} else if (kDown & KEY_B) {
 			if (g_state == IN_SELECTION) {
-				g_active_menu->entries[g_active_menu->props.selected].sel_menu.props.selected = old_selected;
+				selected_entry->sel_menu.props.selected = old_selected;
 				g_state = IN_MENU;
 				old_selected = 0;
 			} else {
@@ -364,8 +350,8 @@ enum operation ui_update()
 				consoleClear();
 				printf("pwalkerHax v%s\n\n", VER);
 			}
-			return OP_UPDATE;
 		} 
+		return OP_UPDATE;
 	}
 	return OP_NONE;
 }
