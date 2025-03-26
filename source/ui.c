@@ -181,24 +181,41 @@ void draw_menu(u16 font_size, u16 padding, menu_properties props)
 		draw_scrollbar(first, cur - 1, props.len);
 }
 
+s32 numpad_input(const char *hint_text, u8 digits)
+{
+	char buf[32];
+	SwkbdState swkbd;
+	SwkbdButton button = SWKBD_BUTTON_NONE;
+
+	swkbdInit(&swkbd, SWKBD_TYPE_NUMPAD, 2, digits);
+	swkbdSetHintText(&swkbd, hint_text);
+	swkbdSetValidation(&swkbd, SWKBD_NOTBLANK_NOTEMPTY, 0, 0);
+	swkbdSetFeatures(&swkbd, SWKBD_FIXED_WIDTH);
+	button = swkbdInputText(&swkbd, buf, sizeof(buf));
+
+	return button == SWKBD_BUTTON_RIGHT ? atoi(buf) : -1;
+}
+
+void goto_item(menu_entry *entry)
+{
+	char str[] = "Go to item";
+	s32 value = numpad_input(str, 3);
+
+	if (value >= 0 && value < entry->sel_menu.props.len)
+		entry->sel_menu.props.selected = value;
+}
+
 void set_numattr(menu_entry *entry)
 {
 	char strbuf[64];
-	u32 value = 0;
-	SwkbdState swkbd;
-	SwkbdButton button = SWKBD_BUTTON_NONE;
-	
-	sprintf(strbuf, "%s (max %d)", entry->text, entry->num_attr.max);
-	swkbdInit(&swkbd, SWKBD_TYPE_NUMPAD, 2, 5);
-	swkbdSetHintText(&swkbd, strbuf);
-	swkbdSetValidation(&swkbd, SWKBD_NOTBLANK_NOTEMPTY, 0, 0);
-	swkbdSetFeatures(&swkbd, SWKBD_FIXED_WIDTH);
-	button = swkbdInputText(&swkbd, strbuf, sizeof(strbuf));
+	s32 value;
 
-	if (button == SWKBD_BUTTON_RIGHT) {
-		value = atoi(strbuf);
+	sprintf(strbuf, "%s (min %d, max %d)", entry->text, entry->num_attr.min, entry->num_attr.max);
+	value = numpad_input(strbuf, 5);
+
+	if (value != -1) {
 		value = value > entry->num_attr.max ? entry->num_attr.max : value;
-		value = value < entry->num_attr.min ? entry->num_attr.min : value;
+		value = value < (s16) entry->num_attr.min ? entry->num_attr.min : value;
 		entry->num_attr.value = value;
 	}
 }
@@ -313,6 +330,9 @@ enum operation ui_update()
 			return OP_UPDATE;
 		} else if (kDown & KEY_RIGHT && g_state == IN_SELECTION) {
 			move_selection(10);
+			return OP_UPDATE;
+		} else if (kDown & KEY_Y && g_state == IN_SELECTION) {
+			goto_item(&g_active_menu->entries[g_active_menu->props.selected]);
 			return OP_UPDATE;
 		} else if (kDown & KEY_A) {
 			if (g_state == IN_SELECTION) {
