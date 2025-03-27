@@ -4,12 +4,12 @@
 void call_poke_add_watts();
 void call_poke_gift_pokemon();
 void call_poke_gift_item();
-void change_menu();
 
 // Add watts menu
 menu_entry add_watts_menu_entries[] = {
 	{"Enter watts to add", ENTRY_NUMATTR, .num_attr = {.value = 100, .min = 1, .max = 65535}},
-	{"Add watts", ENTRY_ACTION, .callback = call_poke_add_watts},
+	{"Set today steps (optional)", ENTRY_NUMATTR, .num_attr = {.value = 0, .min = 0, .max = 65535}},
+	{"Add watts and set steps", ENTRY_ACTION, .callback = call_poke_add_watts},
 };
 
 menu add_watts_menu = {
@@ -226,8 +226,9 @@ void set_numattr(menu_entry *entry)
 void call_poke_add_watts()
 {
 	u16 watts = g_active_menu->entries[0].num_attr.value;
+	u16 steps = g_active_menu->entries[1].num_attr.value;
 	printf("Adding %d watts\n", watts);
-	poke_add_watts(watts);
+	poke_add_watts(watts, steps);
 }
 
 void call_poke_gift_pokemon()

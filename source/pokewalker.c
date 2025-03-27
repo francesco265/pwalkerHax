@@ -195,7 +195,7 @@ void poke_get_data(void)
 	ir_disable();
 }
 
-void poke_add_watts(u16 watts)
+void poke_add_watts(u16 watts, u16 steps)
 {
 	//poke_packet pkt_addwatts, pkt_addwatts_res, pkt_trigger, pkt_trigger_res;
 	poke_packet pkt_req, pkt_ack;
@@ -216,6 +216,18 @@ void poke_add_watts(u16 watts)
 		printf("Error while sending exploit\n");
 		ir_disable();
 		return;
+	}
+
+	if (steps) {
+		u8 steps_payload[] = {0x9C, 0x00, 0x00, steps >> 8, steps & 0xFF};
+		create_poke_packet(&pkt_req, CMD_WRITE, 0xF7, steps_payload, sizeof(steps_payload));
+		send_pokepacket(&pkt_req);
+
+		if (!recv_pokepacket(&pkt_ack) || pkt_ack.header.opcode != CMD_WRITE) {
+			printf("Error while setting steps\n");
+			ir_disable();
+			return;
+		}
 	}
 
 	create_poke_packet(&pkt_req, CMD_WRITE, 0xF7, trigger_exploit, sizeof(trigger_exploit));

@@ -93,6 +93,6 @@ static const char *yn_list[] = {"No", "Yes"};
 static const char *gender_list[] = {"Male", "Female"};
 
 void poke_get_data(void);
-void poke_add_watts(u16 watts);
+void poke_add_watts(u16 watts, u16 steps);
 void poke_gift_item(u16 item);
 void poke_gift_pokemon(pokemon_data poke_data, pokemon_extradata poke_extra);
