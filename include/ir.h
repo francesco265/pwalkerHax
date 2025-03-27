@@ -18,7 +18,7 @@
 #define	REG_EFCR	0x78	// Extra Features Control Register
 
 // Parameters
-#define	RX_MAX_WAIT		40		// 40 cycles ~ 4ms (?)
+#define	RX_MAX_WAIT		30		// 30cycles ~ 3ms (?)
 #define RX_TIMEOUT		40000	// 4s (?)
 
 // Initialize and exit IR

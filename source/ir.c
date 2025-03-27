@@ -80,7 +80,7 @@ u32 ir_recv_data(void *data, u32 size)
 	u8 *ptr8 = (u8 *) data, rxlvl;
 	u16 i, timeout = RX_TIMEOUT;
 	u32 tc = 0;
-	bool loop = true, enter = true;
+	bool loop = true;
 
 	// Reset and enable RX FIFO
 	I2C_write(REG_FCR, 0x03);
@@ -90,23 +90,19 @@ u32 ir_recv_data(void *data, u32 size)
 	do {
 		i = 0;
 		// 10 cycles ~ 1ms (?)
-		while (!(I2C_read(REG_LSR) & BIT(0)) && i < timeout)
+		while (!(rxlvl = I2C_read(REG_RXLVL)) && i < timeout)
 			i++;
 		if (i == timeout)
 			break;
-		if (enter) {
-			timeout = RX_MAX_WAIT;
-			enter = false;
-		}
+		timeout = RX_MAX_WAIT;
 
-		rxlvl = I2C_read(REG_RXLVL);
 		if (tc + rxlvl > size) {
 			rxlvl = size - tc;
 			loop = false;
 		}
 		I2C_readArray(REG_FIFO, ptr8 + tc, rxlvl);
 		tc += rxlvl;
-	} while (loop);
+	} while (loop && tc < 136);
 
 	// Disable transmitter and receiver
 	I2C_write(REG_EFCR, 0x06);
