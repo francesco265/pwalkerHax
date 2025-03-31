@@ -54,9 +54,10 @@ menu gift_pokemon_menu = {
 // Main menu
 menu_entry main_menu_entries[] = {
 	{"Get Pokewalker info", ENTRY_ACTION, .callback = poke_get_data},
-	{"Add watts", ENTRY_CHANGEMENU, .new_menu = &add_watts_menu},
+	{"Add watts and steps", ENTRY_CHANGEMENU, .new_menu = &add_watts_menu},
 	{"Gift Pokemon", ENTRY_CHANGEMENU, .new_menu = &gift_pokemon_menu},
-	{"Gift item", ENTRY_CHANGEMENU, .new_menu = &gift_item_menu}
+	{"Gift item", ENTRY_CHANGEMENU, .new_menu = &gift_item_menu},
+	{"Dump rom", ENTRY_ACTION, .callback = poke_dump_rom}
 };
 
 menu main_menu = {
@@ -71,14 +72,25 @@ static menu *g_active_menu = &main_menu;
 static enum state g_state = IN_MENU;
 static C3D_RenderTarget *target;
 static C2D_TextBuf textbuf;
+static PrintConsole logs;
 
 void ui_init()
 {
+	PrintConsole header;
+
 	C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
 	C2D_Init(C2D_DEFAULT_MAX_OBJECTS);
 	C2D_Prepare();
 
-	consoleInit(GFX_TOP, NULL);
+	consoleInit(GFX_TOP, &header);
+	consoleInit(GFX_TOP, &logs);
+
+	consoleSetWindow(&header, 0, 1, header.consoleWidth, 2);
+	consoleSetWindow(&logs, 0, 3, logs.consoleWidth, logs.consoleHeight - 3);
+
+	consoleSelect(&header);
+	printf("pwalkerHax v%s\n---", VER);
+	consoleSelect(&logs);
 
 	target = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
 	textbuf = C2D_TextBufNew(256);
@@ -331,6 +343,7 @@ enum operation ui_update()
 					case ENTRY_CHANGEMENU:
 						g_active_menu = selected_entry->new_menu;
 						g_active_menu->props.selected = 0;
+						consoleClear();
 						break;
 					case ENTRY_SELATTR:
 						old_selected = selected_entry->sel_menu.props.selected;
@@ -349,7 +362,6 @@ enum operation ui_update()
 			} else {
 				g_active_menu = &main_menu;
 				consoleClear();
-				printf("pwalkerHax v%s\n\n", VER);
 			}
 		} 
 		return OP_UPDATE;

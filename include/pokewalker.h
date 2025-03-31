@@ -17,8 +17,10 @@
 #define CMD_EVENTITEM		0xC4
 #define CMD_DISC			0xF4
 
-#define MASTER_EXTRA 0x01
-#define SLAVE_EXTRA 0x02
+#define MASTER_EXTRA		0x01
+#define SLAVE_EXTRA			0x02
+
+#define ROM_SIZE			0xC000
 
 typedef struct {
 	u8 opcode;
@@ -79,6 +81,28 @@ static u8 add_watts_payload[] = {
 	0x5A, 0x00, 0x69, 0x3A, // jmp setProcToCallByMainInLoop
 };
 
+// upload to 0xF956
+// I edited the original payload by adding a call to smallDelay, as the 3DS ir
+// recv function is too slow
+static const u8 rom_dump_payload[] = {
+	0x56,
+	0x5E, 0x00, 0xBA, 0x42, //jsr	common_prologue
+	0x19, 0x55,             //sub.w   r5, r5
+//lbl_big_loop:
+	0x5E, 0x00, 0x7B, 0x64, //jsr	  smallDelay
+	0x79, 0x06, 0xf8, 0xd6, //mov.w   0xf8d6, r6
+	0xfc, 0x80,             //mov.b   0x80, r4l
+	0x7b, 0x5c, 0x59, 0x8f, //eemov.b
+	0x79, 0x00, 0xaa, 0x80, //mov.w   #0xaa80, r0
+	0x5e, 0x00, 0x07, 0x72, //jsr     sendPacket
+	0x5E, 0x00, 0x25, 0x9E, //jsr     wdt_pet
+	0x79, 0x25, 0xc0, 0x00, //cmp.w   r5, #0xc000
+	0x46, 0xe0,             //bne     $-0x20		//lbl_big_loop
+	0x79, 0x00, 0x08, 0xd6, //mov.w   #&irAppMainLoop, r0
+	0x5e, 0x00, 0x69, 0x3a, //jsr     setProcToCallByMainInLoop
+	0x5a, 0x00, 0xba, 0x62  //jmp     common_epilogue
+};
+
 // upload to 0xF7E0
 static const u8 trigger_exploit[] = {
 	0xE0,
@@ -96,3 +120,4 @@ void poke_get_data(void);
 void poke_add_watts(u16 watts, u16 steps);
 void poke_gift_item(u16 item);
 void poke_gift_pokemon(pokemon_data poke_data, pokemon_extradata poke_extra);
+void poke_dump_rom();

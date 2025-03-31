@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <3ds/types.h>
+#include <3ds.h>
 
 static u32 inited_session_id; // Big endian
 
@@ -368,4 +368,77 @@ void poke_gift_pokemon(pokemon_data poke_data, pokemon_extradata poke_extra)
 	printf("SUCCESS!\n");
 
 	ir_disable();
+}
+
+void poke_dump_rom()
+{
+	poke_packet pkt_req, pkt_ack;
+	u8 *rom_dump;
+	u16 i = 0;
+	
+	ir_enable();
+
+	if (!poke_init_session()) {
+		printf("Error while establishing session\n");
+		ir_disable();
+		return;
+	}
+
+	create_poke_packet(&pkt_req, CMD_WRITE, 0xF9, rom_dump_payload, sizeof(rom_dump_payload));
+	send_pokepacket(&pkt_req);
+
+	if (!recv_pokepacket(&pkt_ack) || pkt_ack.header.opcode != CMD_WRITE) {
+		printf("Error while sending exploit\n");
+		ir_disable();
+		return;
+	}
+
+	create_poke_packet(&pkt_req, CMD_WRITE, 0xF7, trigger_exploit, sizeof(trigger_exploit));
+	send_pokepacket(&pkt_req);
+
+	if (!recv_pokepacket(&pkt_ack) || pkt_ack.header.opcode != CMD_WRITE) {
+		printf("Error while triggering the exploit\n");
+		ir_disable();
+		return;
+	}
+
+	rom_dump = (u8 *) malloc(ROM_SIZE);
+	if (!rom_dump) {
+		printf("Error while allocating memory\n");
+		ir_disable();
+		return;
+	}
+
+	printf("Dumping ROM\n");
+	while (i < ROM_SIZE) {
+		if (!recv_pokepacket(&pkt_ack) || pkt_ack.header.opcode != 0xAA) {
+			printf("\nError while receiving data at 0x%04X\n", i);
+			free(rom_dump);
+			ir_disable();
+			return;
+		}
+		memcpy(rom_dump + i, pkt_ack.payload, pkt_ack.payload_size);
+		i += pkt_ack.payload_size;
+
+		if (i % 0x3000 == 0)
+			printf("%02d%%\n", i * 100 / ROM_SIZE);
+	}
+	printf("Dump finished!\n");
+	ir_disable();
+
+	if (i == ROM_SIZE) {
+		FILE *f = fopen("PWROM.bin", "wb");
+		if (f) {
+			int written = fwrite(rom_dump, 1, ROM_SIZE, f);
+			fclose(f);
+			if (written != ROM_SIZE)
+				printf("Error while writing to file\n");
+			else
+				printf("ROM dumped to PWROM.bin\n");
+		} else {
+			printf("Error while opening file\n");
+		}
+	}
+
+	free(rom_dump);
 }
