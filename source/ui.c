@@ -13,7 +13,7 @@ menu_entry add_watts_menu_entries[] = {
 };
 
 menu add_watts_menu = {
-	.title = "Add watts",
+	.title = "Add watts and steps",
 	.entries = add_watts_menu_entries,
 	.props = {.len = sizeof(add_watts_menu_entries) / sizeof(add_watts_menu_entries[0]), .selected = 0},
 };
@@ -324,9 +324,9 @@ enum operation ui_update()
 			move_selection(-1);
 		} else if (kDown & KEY_DOWN) {
 			move_selection(1);
-		} else if (kDown & KEY_LEFT && g_state == IN_SELECTION) {
+		} else if (kDown & KEY_LEFT) {
 			move_selection(-10);
-		} else if (kDown & KEY_RIGHT && g_state == IN_SELECTION) {
+		} else if (kDown & KEY_RIGHT) {
 			move_selection(10);
 		} else if (kDown & KEY_Y && g_state == IN_SELECTION) {
 			goto_item(selected_entry);
