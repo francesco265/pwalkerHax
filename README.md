@@ -2,16 +2,33 @@
 
 An hacking tool for the Pokewalker written as a 3DS homebrew application that uses the built-in infrared transceiver to communicate with the Pokewalker.
 
+You might also be interested in my other project [**RtcPwalker**](https://github.com/francesco265/RtcPwalker).
+[Here](https://youtu.be/f6f8RSxqG20) you can find a demo of my two projects in action (**pwalkerHax** + **RtcPwalker**).
+
+
 ## Current Features
 
-At the moment, the following features are implemented:
-- **Adding watts**
-- **Gifting an event item**
-- **Gifting an event Pokemon**
+At the moment, the following features are implemented or planned:
+- [x] **Add watts**
+- [x] **Set today steps**
+- [x] **Gift an event item**
+- [x] **Gift an event Pokemon**
+- [x] **Dump ROM**
+
 
 Feel free to open an issue if you have any suggestions or requests for new features.
 
 When connecting to the Pokewalker, make sure to point it towards the 3DS's infrared sensor, which is the black spot on the back side of the device, and keep the two devices close to each other.
+
+### Commands
+
+| Command    | Action                |
+|------------|-----------------------|
+| Up/Down    | Move selection        |
+| Left/Right | Move selection faster |
+| A          | Select                |
+| B          | Cancel                |
+| Y          | Go to item number     |
 
 ## Installation
 
@@ -24,3 +41,14 @@ The only requirement to build this project is to have the [libctru](https://gith
 ## Credits
 
 This code is just a port of Dmitry's amazing [work](https://dmitry.gr/?r=05.Projects&proj=28.%20pokewalker), for which he originally developed a running demo for PalmOS devices. He reverse-engineered the Pokewalker's protocol and created all the exploits, i just ported his work to the 3DS.
+
+---
+If you appreciate my works and want to support me, you can offer me a coffee :coffee::heart:.
+
+**BTC**: `bc1qvvjndu7mqe9l2ze4sm0eqzkq839m0w6ldms8ex`
+<form style="display:flex; align-items:center "action="https://www.paypal.com/donate" method="post" target="_top">
+<b style="margin-right: 10px">PayPal: </b>
+<input type="hidden" name="hosted_button_id" value="AAZDH3SM7T9P6" />
+<input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" border="0" name="submit" title="PayPal - The safer, easier way to pay online!" alt="Donate with PayPal button" />
+<img alt="" border="0" src="https://www.paypal.com/en_IT/i/scr/pixel.gif" width="1" height="1" />
+</form>
