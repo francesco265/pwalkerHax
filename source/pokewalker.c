@@ -442,3 +442,47 @@ void poke_dump_rom()
 
 	free(rom_dump);
 }
+
+void poke_dump_eeprom()
+{
+	u32 addr = 0;
+	u8 payload[] = {0, 0, 0x80};
+	poke_packet pkt_req, pkt_ack;
+
+	ir_enable();
+
+	if (!poke_init_session()) {
+		printf("Error while establishing session\n");
+		ir_disable();
+		return;
+	}
+
+	FILE *f = fopen("PWEEPROM.bin", "wb");
+
+	printf("Dumping EEPROM\n");
+	for (u32 i = 0; i < 512; i++) {
+		addr = i * 0x80;
+		payload[0] = addr >> 8;
+		payload[1] = addr & 0xFF;
+
+		create_poke_packet(&pkt_req, CMD_EEPROMREAD, MASTER_EXTRA, payload, sizeof(payload));
+		send_pokepacket(&pkt_req);
+
+		if (!recv_pokepacket(&pkt_ack) || pkt_ack.header.opcode != CMD_EEPROMREAD_ACK) {
+			printf("Error while reading EEPROM at 0x%04X\n", addr);
+			ir_disable();
+			fclose(f);
+			return;
+		}
+
+		if (i % 0x80 == 0)
+			printf("%02d%%\n", i * 100 / 512);
+
+		fwrite(pkt_ack.payload, 1, pkt_ack.payload_size, f);
+	}
+	printf("Dump finished!\n");
+	printf("EEPROM dumped to PWEEPROM.bin\n");
+
+	ir_disable();
+	fclose(f);
+}

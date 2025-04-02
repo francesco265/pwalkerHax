@@ -11,6 +11,8 @@
 #define CMD_EEPROMWRITE_ACK 0x04
 #define CMD_WRITE			0x06
 #define CMD_EEPROMWRITE		0x0A
+#define CMD_EEPROMREAD		0x0C
+#define CMD_EEPROMREAD_ACK	0x0E
 #define CMD_ASKDATA			0x20
 #define CMD_DATA			0x22
 #define CMD_EVENTPOKE		0xC2
@@ -121,3 +123,4 @@ void poke_add_watts(u16 watts, u16 steps);
 void poke_gift_item(u16 item);
 void poke_gift_pokemon(pokemon_data poke_data, pokemon_extradata poke_extra);
 void poke_dump_rom();
+void poke_dump_eeprom();

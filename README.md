@@ -14,6 +14,7 @@ At the moment, the following features are implemented or planned:
 - [x] **Gift an event item**
 - [x] **Gift an event Pokemon**
 - [x] **Dump ROM**
+- [x] **Dump EEPROM**
 
 
 Feel free to open an issue if you have any suggestions or requests for new features.

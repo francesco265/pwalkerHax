@@ -57,7 +57,8 @@ menu_entry main_menu_entries[] = {
 	{"Add watts and steps", ENTRY_CHANGEMENU, .new_menu = &add_watts_menu},
 	{"Gift Pokemon", ENTRY_CHANGEMENU, .new_menu = &gift_pokemon_menu},
 	{"Gift item", ENTRY_CHANGEMENU, .new_menu = &gift_item_menu},
-	{"Dump rom", ENTRY_ACTION, .callback = poke_dump_rom}
+	{"Dump ROM", ENTRY_ACTION, .callback = poke_dump_rom},
+	{"Dump EEPROM (user data)", ENTRY_ACTION, .callback = poke_dump_eeprom}
 };
 
 menu main_menu = {
