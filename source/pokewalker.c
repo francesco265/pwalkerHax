@@ -420,8 +420,7 @@ void poke_dump_rom()
 		memcpy(rom_dump + i, pkt_ack.payload, pkt_ack.payload_size);
 		i += pkt_ack.payload_size;
 
-		if (i % 0x3000 == 0)
-			printf("%02d%%\n", i * 100 / ROM_SIZE);
+		progress_bar(i, ROM_SIZE, 25);
 	}
 	printf("Dump finished!\n");
 	ir_disable();
@@ -469,16 +468,14 @@ void poke_dump_eeprom()
 		send_pokepacket(&pkt_req);
 
 		if (!recv_pokepacket(&pkt_ack) || pkt_ack.header.opcode != CMD_EEPROMREAD_ACK) {
-			printf("Error while reading EEPROM at 0x%04X\n", addr);
+			printf("\nError while reading EEPROM at 0x%04X\n", addr);
 			ir_disable();
 			fclose(f);
 			return;
 		}
 
-		if (i % 0x80 == 0)
-			printf("%02d%%\n", i * 100 / 512);
-
 		fwrite(pkt_ack.payload, 1, pkt_ack.payload_size, f);
+		progress_bar(i, 512, 25);
 	}
 	printf("Dump finished!\n");
 	printf("EEPROM dumped to PWEEPROM.bin\n");

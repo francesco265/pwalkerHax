@@ -46,10 +46,5 @@ This code is just a port of Dmitry's amazing [work](https://dmitry.gr/?r=05.Proj
 ---
 If you appreciate my works and want to support me, you can offer me a coffee :coffee::heart:.
 
-**BTC**: `bc1qvvjndu7mqe9l2ze4sm0eqzkq839m0w6ldms8ex`
-<form style="display:flex; align-items:center "action="https://www.paypal.com/donate" method="post" target="_top">
-<b style="margin-right: 10px">PayPal: </b>
-<input type="hidden" name="hosted_button_id" value="AAZDH3SM7T9P6" />
-<input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" border="0" name="submit" title="PayPal - The safer, easier way to pay online!" alt="Donate with PayPal button" />
-<img alt="" border="0" src="https://www.paypal.com/en_IT/i/scr/pixel.gif" width="1" height="1" />
-</form>
+- **BTC**: `bc1qvvjndu7mqe9l2ze4sm0eqzkq839m0w6ldms8ex`
+- **PayPal**: [![](https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=AAZDH3SM7T9P6)
