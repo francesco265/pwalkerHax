@@ -1,5 +1,6 @@
 #include "utils.h"
 #include "font.h"
+#include "stdio.h"
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
@@ -121,4 +122,27 @@ void string_upper(char *dst, const char *src)
 	while (*src)
 		*dst++ = toupper((int) *src++);
 	*dst = 0;
+}
+
+// Maybe do this as a wrapper function?
+// width is in number of characters
+void progress_bar(int current, int total, int width)
+{
+	int x = 0;
+
+	printf("\033[2K");
+	printf("[");
+	current++;
+	for (int i = 0; i < width; i++) {
+		x = (current * width) / total;
+		if (i < x)
+			printf("=");
+		else if (i == x)
+			printf(">");
+		else
+			printf(" ");
+	}
+	printf("] %d%%\n", current * 100 / total);
+	if (current < total)
+		printf("\033[1A");
 }

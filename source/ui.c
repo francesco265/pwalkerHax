@@ -1,4 +1,5 @@
 #include "ui.h"
+#include "updates.h"
 #include <stdlib.h>
 
 void call_poke_add_watts();
@@ -329,6 +330,12 @@ enum operation ui_update()
 			move_selection(-10);
 		} else if (kDown & KEY_RIGHT) {
 			move_selection(10);
+		} else if (kDown & KEY_SELECT && updates_available()) {
+			printf("Downloading new version...\n");
+			if (updates_download())
+				printf("New version saved as pwalkerHax_latest.3dsx!\n");
+			else
+				printf("Download failed!\n");
 		} else if (kDown & KEY_Y && g_state == IN_SELECTION) {
 			goto_item(selected_entry);
 		} else if (kDown & KEY_A) {

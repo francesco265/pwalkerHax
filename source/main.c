@@ -1,5 +1,6 @@
 #include "ir.h"
 #include "ui.h"
+#include "updates.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <3ds.h>
@@ -7,6 +8,9 @@
 int main(int argc, char* argv[])
 {
 	enum operation op;
+	s32 prio;
+
+	svcGetThreadPriority(&prio, CUR_THREAD_HANDLE);
 
 	gfxInitDefault();
 
@@ -14,6 +18,7 @@ int main(int argc, char* argv[])
 	ir_init();
 
 	ui_draw();
+	threadCreate((ThreadFunc) updates_check, (void *) VER, 1024, prio - 1, -2, true);
 	while (aptMainLoop()) {
 		op = ui_update();
 		if (op == OP_EXIT)
