@@ -151,6 +151,46 @@ bool poke_eeprom_write(u16 addr, const void *data, u16 size)
 	return true;
 }
 
+// Session must be already established
+// Read from pokewalker EEPROM and place the result in out.
+// out buffer size must be of the appropriate size
+bool poke_eeprom_read(u8 *out, u16 addr, u8 size)
+{
+	poke_packet pkt_req, pkt_ack;
+
+	u8 read_payload[] = {addr >> 8, addr & 0xFF, size};
+	create_poke_packet(&pkt_req, CMD_EEPROMREAD, MASTER_EXTRA, read_payload, sizeof(read_payload));
+	send_pokepacket(&pkt_req);
+
+	bool result = recv_pokepacket(&pkt_ack) && pkt_ack.header.opcode == CMD_EEPROMREAD_ACK;
+
+	// pkt_ack.payload_size == len
+	if (result) memcpy(out, pkt_ack.payload, pkt_ack.payload_size);
+
+	return result;
+}
+
+// Session must be already established
+// Utility for uploading and triggering an exploit
+bool poke_upload_and_trigger_exploit(const u8 *payload, u16 payload_size)
+{
+	poke_packet pkt_req, pkt_ack;
+
+	create_poke_packet(&pkt_req, CMD_WRITE, 0xF9, payload, payload_size);
+	send_pokepacket(&pkt_req);
+
+	if (!recv_pokepacket(&pkt_ack) || pkt_ack.header.opcode != CMD_WRITE)
+		return false;
+
+	create_poke_packet(&pkt_req, CMD_WRITE, 0xF7, trigger_exploit, sizeof(trigger_exploit));
+	send_pokepacket(&pkt_req);
+
+	if (!recv_pokepacket(&pkt_ack) || pkt_ack.header.opcode != CMD_WRITE)
+		return false;
+
+	return true;
+}
+
 void print_identity_data(const identity_data *data)
 {
 	char trainer_name[8];
@@ -208,17 +248,11 @@ void poke_add_watts(u16 watts, u16 steps)
 		return;
 	}
 
-	set_watts(watts);
-	create_poke_packet(&pkt_req, CMD_WRITE, 0xF9, add_watts_payload, sizeof(add_watts_payload));
-	send_pokepacket(&pkt_req);
-
-	if (!recv_pokepacket(&pkt_ack) || pkt_ack.header.opcode != CMD_WRITE) {
-		printf("Error while sending exploit\n");
-		ir_disable();
-		return;
-	}
-
+	// When calling the addWatts function, it also saves the cached health_data
+	// structure to EEPROM, we can leverage this to add to the total step count
+	// in the cached health_data, before it's written to EEPROM by addWatts
 	if (steps) {
+		// Set today number of steps
 		u8 steps_payload[] = {0x9C, 0x00, 0x00, steps >> 8, steps & 0xFF};
 		create_poke_packet(&pkt_req, CMD_WRITE, 0xF7, steps_payload, sizeof(steps_payload));
 		send_pokepacket(&pkt_req);
@@ -230,11 +264,10 @@ void poke_add_watts(u16 watts, u16 steps)
 		}
 	}
 
-	create_poke_packet(&pkt_req, CMD_WRITE, 0xF7, trigger_exploit, sizeof(trigger_exploit));
-	send_pokepacket(&pkt_req);
+	set_watts(watts);
 
-	if (!recv_pokepacket(&pkt_ack) || pkt_ack.header.opcode != CMD_WRITE) {
-		printf("Error while triggering the exploit\n");
+	if (!poke_upload_and_trigger_exploit(add_watts_payload, sizeof(add_watts_payload))) {
+		printf("Error while uploading or triggering the exploit\n");
 		ir_disable();
 		return;
 	}
@@ -384,27 +417,15 @@ void poke_dump_rom()
 		return;
 	}
 
-	create_poke_packet(&pkt_req, CMD_WRITE, 0xF9, rom_dump_payload, sizeof(rom_dump_payload));
-	send_pokepacket(&pkt_req);
-
-	if (!recv_pokepacket(&pkt_ack) || pkt_ack.header.opcode != CMD_WRITE) {
-		printf("Error while sending exploit\n");
-		ir_disable();
-		return;
-	}
-
-	create_poke_packet(&pkt_req, CMD_WRITE, 0xF7, trigger_exploit, sizeof(trigger_exploit));
-	send_pokepacket(&pkt_req);
-
-	if (!recv_pokepacket(&pkt_ack) || pkt_ack.header.opcode != CMD_WRITE) {
-		printf("Error while triggering the exploit\n");
-		ir_disable();
-		return;
-	}
-
 	rom_dump = (u8 *) malloc(ROM_SIZE);
 	if (!rom_dump) {
 		printf("Error while allocating memory\n");
+		ir_disable();
+		return;
+	}
+
+	if (!poke_upload_and_trigger_exploit(rom_dump_payload, sizeof(rom_dump_payload))) {
+		printf("Error while uploading or triggering the exploit\n");
 		ir_disable();
 		return;
 	}
@@ -444,9 +465,8 @@ void poke_dump_rom()
 
 void poke_dump_eeprom()
 {
-	u32 addr = 0;
-	u8 payload[] = {0, 0, 0x80};
-	poke_packet pkt_req, pkt_ack;
+	u16 addr = 0;
+	u8 buf[0x80];
 
 	ir_enable();
 
@@ -461,20 +481,15 @@ void poke_dump_eeprom()
 	printf("Dumping EEPROM\n");
 	for (u32 i = 0; i < 512; i++) {
 		addr = i * 0x80;
-		payload[0] = addr >> 8;
-		payload[1] = addr & 0xFF;
 
-		create_poke_packet(&pkt_req, CMD_EEPROMREAD, MASTER_EXTRA, payload, sizeof(payload));
-		send_pokepacket(&pkt_req);
-
-		if (!recv_pokepacket(&pkt_ack) || pkt_ack.header.opcode != CMD_EEPROMREAD_ACK) {
+		if (!poke_eeprom_read(buf, addr, 0x80)) {
 			printf("\nError while reading EEPROM at 0x%04X\n", addr);
 			ir_disable();
 			fclose(f);
 			return;
 		}
 
-		fwrite(pkt_ack.payload, 1, pkt_ack.payload_size, f);
+		fwrite(buf, 1, 0x80, f);
 		progress_bar(i, 512, 25);
 	}
 	printf("Dump finished!\n");
