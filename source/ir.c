@@ -3,20 +3,54 @@
 #include <stdbool.h>
 #include <3ds/types.h>
 
-void ir_setbitrate(u16 value)
+void ir_enable(void)
 {
-	u8 lcr = I2C_read(REG_LCR);
-
-	// Enable access to DLL and DLH
-	I2C_write(REG_LCR, lcr | BIT(7));
 	// Disable sleep mode
 	I2C_write(REG_IER, 0);
+	// IOState must be 0
+	I2C_write(REG_IOSTATE, 0);
+}
 
+void ir_disable(void)
+{
+	// Enable sleep mode
+	I2C_write(REG_IER, BIT(4));
+	I2C_write(REG_IOSTATE, BIT(0));
+}
+
+
+void ir_setbitrate(u16 value)
+{
+	// Disable transmitter and receiver
+	I2C_write(REG_EFCR, BIT(1) | BIT(2));
+	// Clear and disable FIFOs
+	I2C_write(REG_FCR, BIT(1) | BIT(2));
+	svcSleepThread(2 * 1000 * 1000);
+
+	ir_enable();
+
+	// u8 lcr = I2C_read(REG_LCR);
+	// Enable access to DLL and DLH and set 8n1
+	I2C_write(REG_LCR, 0x03 | BIT(7));
 	I2C_write(REG_DLL, value & 0xFF);
 	I2C_write(REG_DLH, (value >> 8) & 0xFF);
+	I2C_write(REG_LCR, 0x03);
 
-	I2C_write(REG_LCR, lcr);
-	I2C_write(REG_IER, BIT(4));
+	svcSleepThread(2 * 1000 * 1000);
+
+	// Read DLL and DLH
+	I2C_write(REG_LCR, 0x03 | BIT(7));
+	I2C_read(REG_DLL);
+	I2C_read(REG_DLH);
+	I2C_write(REG_LCR, 0x03);
+
+	// Re-write it
+	I2C_write(REG_LCR, 0x03 | BIT(7));
+	I2C_write(REG_DLL, value & 0xFF);
+	I2C_write(REG_DLH, (value >> 8) & 0xFF);
+	I2C_write(REG_LCR, 0x03);
+	
+	ir_disable();
 }
 
 bool ir_init(void)
@@ -31,21 +65,6 @@ bool ir_init(void)
 	ir_setbitrate(10);
 
 	return true;
-}
-
-void ir_enable(void)
-{
-	// Disable sleep mode
-	I2C_write(REG_IER, 0);
-	// IOState must be 0
-	I2C_write(REG_IOSTATE, 0);
-}
-
-void ir_disable(void)
-{
-	// Enable sleep mode
-	I2C_write(REG_IER, BIT(4));
-	I2C_write(REG_IOSTATE, BIT(0));
 }
 
 void ir_send_data(void *data, u32 size)
