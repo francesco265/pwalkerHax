@@ -58,9 +58,9 @@ typedef struct {
 		menu *new_menu;
 		selection_menu sel_menu;
 		struct {
-			u16 value;
-			u16 min;
-			u16 max;
+			u32 value;
+			u32 min;
+			u32 max;
 		} num_attr;
 	};
 } menu_entry;

@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <3ds.h>
 
+#define clamp(x, min, max) x < min ? min : (x > max ? max : x)
+
 static u32 inited_session_id; // Big endian
 
 void set_watts(u16 watts)
@@ -154,7 +156,7 @@ bool poke_eeprom_write(u16 addr, const void *data, u16 size)
 // Session must be already established
 // Read from pokewalker EEPROM and place the result in out.
 // out buffer size must be of the appropriate size
-bool poke_eeprom_read(u8 *out, u16 addr, u8 size)
+bool poke_eeprom_read(void *out, u16 addr, u8 size)
 {
 	poke_packet pkt_req, pkt_ack;
 
@@ -235,9 +237,8 @@ void poke_get_data(void)
 	ir_disable();
 }
 
-void poke_add_watts(u16 watts, u16 steps)
+void poke_add_watts(u16 watts, u32 steps, bool max_steps)
 {
-	//poke_packet pkt_addwatts, pkt_addwatts_res, pkt_trigger, pkt_trigger_res;
 	poke_packet pkt_req, pkt_ack;
 
 	ir_enable();
@@ -248,24 +249,63 @@ void poke_add_watts(u16 watts, u16 steps)
 		return;
 	}
 
-	// When calling the addWatts function, it also saves the cached health_data
-	// structure to EEPROM, we can leverage this to add to the total step count
-	// in the cached health_data, before it's written to EEPROM by addWatts
+	// When the addWatts function is called, the cached health_data gets flushed
+	// to EEPROM: we can leverage this to add to the total step count in the
+	// cached health_data, before it gets written to EEPROM by addWatts
+	s32 total_stepcount = MAX_TOTAL_STEPS;
 	if (steps) {
+		u32 buf[2];
+
+		// If max_steps is enabled, we can skip all the total_steps calculation logic
+		if (max_steps) goto set_todaysteps;
+
+		if (!poke_upload_and_trigger_exploit(write_todaysteps_to_eeprom_payload, sizeof(write_todaysteps_to_eeprom_payload)) ||
+				!poke_upload_and_trigger_exploit(write_totalsteps_to_eeprom_payload, sizeof(write_totalsteps_to_eeprom_payload))) {
+			printf("Error while uploading or triggering the exploit\n");
+			ir_disable();
+			return;
+		}
+
+		if (!poke_eeprom_read(buf, 0xFFF0, sizeof(buf))) {
+			printf("Error while reading the number of steps\n");
+			ir_disable();
+			return;
+		}
+		u32 today_stepcount = swap32(buf[0]);
+		total_stepcount = swap32(buf[1]);
+
+		// Compute the new number of total_steps
+		total_stepcount = total_stepcount - today_stepcount + steps;
+		total_stepcount = clamp(total_stepcount, steps, MAX_TOTAL_STEPS); // Clamp for safety
+
+set_todaysteps: ;
 		// Set today number of steps
-		u8 steps_payload[] = {0x9C, 0x00, 0x00, steps >> 8, steps & 0xFF};
-		create_poke_packet(&pkt_req, CMD_WRITE, 0xF7, steps_payload, sizeof(steps_payload));
+		u8 payload[] = {0x9C, 0x00, 0x00, 0x00, 0x00};
+		*((u32 *)(payload + 1)) = swap32(steps);
+		create_poke_packet(&pkt_req, CMD_WRITE, 0xF7, payload, sizeof(payload));
 		send_pokepacket(&pkt_req);
 
 		if (!recv_pokepacket(&pkt_ack) || pkt_ack.header.opcode != CMD_WRITE) {
-			printf("Error while setting steps\n");
+			printf("Error while setting today steps\n");
+			ir_disable();
+			return;
+		}
+	}
+	if (steps || max_steps) {
+		// Set correct number of total steps
+		u8 payload[] = {0x80, 0x00, 0x00, 0x00, 0x00};
+		*((u32 *)(payload + 1)) = swap32(total_stepcount);
+		create_poke_packet(&pkt_req, CMD_WRITE, 0xF7, payload, sizeof(payload));
+		send_pokepacket(&pkt_req);
+
+		if (!recv_pokepacket(&pkt_ack) || pkt_ack.header.opcode != CMD_WRITE) {
+			printf("Error while setting total steps\n");
 			ir_disable();
 			return;
 		}
 	}
 
 	set_watts(watts);
-
 	if (!poke_upload_and_trigger_exploit(add_watts_payload, sizeof(add_watts_payload))) {
 		printf("Error while uploading or triggering the exploit\n");
 		ir_disable();
@@ -405,7 +445,7 @@ void poke_gift_pokemon(pokemon_data poke_data, pokemon_extradata poke_extra)
 
 void poke_dump_rom()
 {
-	poke_packet pkt_req, pkt_ack;
+	poke_packet pkt_ack;
 	u8 *rom_dump;
 	u16 i = 0;
 	

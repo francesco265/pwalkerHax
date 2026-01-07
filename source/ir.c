@@ -25,7 +25,7 @@ void ir_setbitrate(u16 value)
 	I2C_write(REG_EFCR, BIT(1) | BIT(2));
 	// Clear and disable FIFOs
 	I2C_write(REG_FCR, BIT(1) | BIT(2));
-	svcSleepThread(2 * 1000 * 1000);
+	svcSleepThread(2 * 1000 * 1000); // Don't know if this is really needed
 
 	ir_enable();
 
@@ -36,9 +36,9 @@ void ir_setbitrate(u16 value)
 	I2C_write(REG_DLH, (value >> 8) & 0xFF);
 	I2C_write(REG_LCR, 0x03);
 
-	svcSleepThread(2 * 1000 * 1000);
+	svcSleepThread(2 * 1000 * 1000); // Don't know if this is really needed
 
-	// Read DLL and DLH
+	// Read DLL and DLH, in Nintendo ir module they do this
 	I2C_write(REG_LCR, 0x03 | BIT(7));
 	I2C_read(REG_DLL);
 	I2C_read(REG_DLH);

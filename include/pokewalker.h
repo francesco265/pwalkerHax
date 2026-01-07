@@ -5,6 +5,8 @@
 #define MAX_PAYLOAD_SIZE 128
 #define MAX_PACKET_SIZE (sizeof(packet_header) + MAX_PAYLOAD_SIZE)
 
+#define MAX_TOTAL_STEPS	9999999
+
 // Commands
 #define CMD_SYN				0xFA
 #define CMD_SYNACK			0xF8
@@ -83,6 +85,34 @@ static u8 add_watts_payload[] = {
 	0x5A, 0x00, 0x69, 0x3A, // jmp setProcToCallByMainInLoop
 };
 
+// Loads the current number of steps (saved in RAM at 0xF79C) and the total
+// number of steps (cached in RAM at 0xF780) to EEPROM 0xFFF0.
+// I don't know why combining these two exploits into one makes the pokewalker
+// reset the connection...
+static const u8 write_todaysteps_to_eeprom_payload[] = {
+	0x56,
+	0x5E, 0x00, 0xBA, 0x42, //jsr	common_prologue
+	0x79, 0x00, 0xFF, 0xF0, //mov.w	#0xFFF0, r0
+	0x79, 0x01, 0x00, 0x04, //mov.w #0x4, r1
+	0x79, 0x08, 0xf7, 0x9c, //mov.w #0xF79C, e0
+	0x5E, 0x00, 0x52, 0x4E, //jsr	eepromWriteData
+	0x79, 0x00, 0x08, 0xd6, //mov.w #&irAppMainLoop, r0
+	0x5e, 0x00, 0x69, 0x3a, //jsr   setProcToCallByMainInLoop
+	0x5A, 0x00, 0xba, 0x62  //jmp	common_epilogue
+};
+
+static const u8 write_totalsteps_to_eeprom_payload[] = {
+	0x56,
+	0x5E, 0x00, 0xBA, 0x42, //jsr	common_prologue
+	0x79, 0x00, 0xFF, 0xF4, //mov.w	#0xFFF4, r0
+	0x79, 0x01, 0x00, 0x04, //mov.w #0x4, r1
+	0x79, 0x08, 0xf7, 0x80, //mov.w #0xF780, e0
+	0x5E, 0x00, 0x52, 0x4E, //jsr	eepromWriteData
+	0x79, 0x00, 0x08, 0xd6, //mov.w #&irAppMainLoop, r0
+	0x5e, 0x00, 0x69, 0x3a, //jsr   setProcToCallByMainInLoop
+	0x5A, 0x00, 0xba, 0x62  //jmp	common_epilogue
+};
+
 // upload to 0xF956
 // I edited the original payload by adding a call to smallDelay, as the 3DS ir
 // recv function is too slow
@@ -119,7 +149,7 @@ static const char *yn_list[] = {"No", "Yes"};
 static const char *gender_list[] = {"Male", "Female"};
 
 void poke_get_data(void);
-void poke_add_watts(u16 watts, u16 steps);
+void poke_add_watts(u16 watts, u32 steps, bool max_steps);
 void poke_gift_item(u16 item);
 void poke_gift_pokemon(pokemon_data poke_data, pokemon_extradata poke_extra);
 void poke_dump_rom();
