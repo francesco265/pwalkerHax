@@ -13,7 +13,7 @@
 #define SCREEN_WIDTH 320
 #define SCREEN_HEIGHT 240
 
-#define VER	"1.1"
+#define VER	"1.2"
 
 void ui_init();
 void ui_exit();
