@@ -18,7 +18,9 @@ int main(int argc, char* argv[])
 	ir_init();
 
 	ui_draw();
-	threadCreate((ThreadFunc) updates_check, (void *) VER, 1024, prio - 1, -2, true);
+	// Disable updates checking and downloading for now, as it seems that httpc
+	// doesn't work anymore on GitHub...
+	// threadCreate((ThreadFunc) updates_check, (void *) VER, 1024, prio - 1, -2, true);
 	while (aptMainLoop()) {
 		op = ui_update();
 		if (op == OP_EXIT)
