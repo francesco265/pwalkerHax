@@ -216,8 +216,7 @@ void poke_get_data(void)
 
 	if (!poke_init_session()) {
 		printf("Error while establishing session\n");
-		ir_disable();
-		return;
+		goto finish;
 	}
 
 	create_poke_packet(&pkt_req, CMD_ASKDATA, MASTER_EXTRA, NULL, 0);
@@ -225,8 +224,7 @@ void poke_get_data(void)
 
 	if (!recv_pokepacket(&pkt_idata) || pkt_idata.header.opcode != CMD_DATA) {
 		printf("Error while receiving identity_data\n");
-		ir_disable();
-		return;
+		goto finish;
 	}
 
 	create_poke_packet(&pkt_req, CMD_DISC, MASTER_EXTRA, NULL, 0);
@@ -234,6 +232,7 @@ void poke_get_data(void)
 
 	print_identity_data((identity_data *) pkt_idata.payload);
 
+finish:
 	ir_disable();
 }
 
@@ -245,8 +244,7 @@ void poke_add_watts(u16 watts, u32 steps, bool max_steps)
 
 	if (!poke_init_session()) {
 		printf("Error while establishing session\n");
-		ir_disable();
-		return;
+		goto finish;
 	}
 
 	// When the addWatts function is called, the cached health_data gets flushed
@@ -262,14 +260,12 @@ void poke_add_watts(u16 watts, u32 steps, bool max_steps)
 		if (!poke_upload_and_trigger_exploit(write_todaysteps_to_eeprom_payload, sizeof(write_todaysteps_to_eeprom_payload)) ||
 				!poke_upload_and_trigger_exploit(write_totalsteps_to_eeprom_payload, sizeof(write_totalsteps_to_eeprom_payload))) {
 			printf("Error while uploading or triggering the exploit\n");
-			ir_disable();
-			return;
+			goto finish;
 		}
 
 		if (!poke_eeprom_read(buf, 0xFFF0, sizeof(buf))) {
 			printf("Error while reading the number of steps\n");
-			ir_disable();
-			return;
+			goto finish;
 		}
 		u32 today_stepcount = swap32(buf[0]);
 		total_stepcount = swap32(buf[1]);
@@ -287,8 +283,7 @@ set_todaysteps: ;
 
 		if (!recv_pokepacket(&pkt_ack) || pkt_ack.header.opcode != CMD_WRITE) {
 			printf("Error while setting today steps\n");
-			ir_disable();
-			return;
+			goto finish;
 		}
 	}
 	if (steps || max_steps) {
@@ -300,20 +295,19 @@ set_todaysteps: ;
 
 		if (!recv_pokepacket(&pkt_ack) || pkt_ack.header.opcode != CMD_WRITE) {
 			printf("Error while setting total steps\n");
-			ir_disable();
-			return;
+			goto finish;
 		}
 	}
 
 	set_watts(watts);
 	if (!poke_upload_and_trigger_exploit(add_watts_payload, sizeof(add_watts_payload))) {
 		printf("Error while uploading or triggering the exploit\n");
-		ir_disable();
-		return;
+		goto finish;
 	}
 
 	printf("SUCCESS!\n");
 
+finish:
 	ir_disable();
 }
 
@@ -334,20 +328,17 @@ void poke_gift_item(u16 item)
 
 	if (!poke_init_session()) {
 		printf("Error while establishing session\n");
-		ir_disable();
-		return;
+		goto finish;
 	}
 
 	if (!poke_eeprom_write(0xBD40, item_data, sizeof(item_data))) {
 		printf("Error while writing item data on EEPROM\n");
-		ir_disable();
-		return;
+		goto finish;
 	}
 
 	if (!poke_eeprom_write(0xBD48, item_name, sizeof(item_name))) {
 		printf("Error while writing item name bitmap on EEPROM\n");
-		ir_disable();
-		return;
+		goto finish;
 	}
 
 	create_poke_packet(&pkt_req, CMD_EVENTITEM, MASTER_EXTRA, NULL, 0);
@@ -355,12 +346,12 @@ void poke_gift_item(u16 item)
 
 	if (!recv_pokepacket(&pkt_ack) || pkt_ack.header.opcode != CMD_EVENTITEM) {
 		printf("Error while triggering the item event\n");
-		ir_disable();
-		return;
+		goto finish;
 	}
 
 	printf("SUCCESS!\n");
 
+finish:
 	ir_disable();
 }
 
@@ -382,8 +373,7 @@ void poke_gift_pokemon(pokemon_data poke_data, pokemon_extradata poke_extra)
 
 	if (!poke_init_session()) {
 		printf("Error while establishing session\n");
-		ir_disable();
-		return;
+		goto finish;
 	}
 
 	// Get identity data
@@ -392,16 +382,14 @@ void poke_gift_pokemon(pokemon_data poke_data, pokemon_extradata poke_extra)
 
 	if (!recv_pokepacket(&pkt_idata) || pkt_idata.header.opcode != CMD_DATA) {
 		printf("Error while receiving identity_data\n");
-		ir_disable();
-		return;
+		goto finish;
 	}
 	idata = (identity_data *) pkt_idata.payload;
 
 	// Write pokemon_data struct to 0xBA44
 	if (!poke_eeprom_write(0xBA44, &poke_data, sizeof(pokemon_data))) {
 		printf("Error while writing pokemon_data on EEPROM\n");
-		ir_disable();
-		return;
+		goto finish;
 	}
 
 	// Write pokemon_extradata struct to 0xBA54
@@ -410,22 +398,19 @@ void poke_gift_pokemon(pokemon_data poke_data, pokemon_extradata poke_extra)
 	memcpy(poke_extra.trainer_name, idata->trainer_name, sizeof(poke_extra.trainer_name));
 	if (!poke_eeprom_write(0xBA54, &poke_extra, sizeof(pokemon_extradata))) {
 		printf("Error while writing pokemon_extradata on EEPROM\n");
-		ir_disable();
-		return;
+		goto finish;
 	}
 
 	// Write animation to 0xBA80
 	if (!poke_eeprom_write(0xBA80, animation, sizeof(animation))) {
 		printf("Error while writing animation on EEPROM\n");
-		ir_disable();
-		return;
+		goto finish;
 	}
 
 	// Write pokemon name image to 0xBC00
 	if (!poke_eeprom_write(0xBC00, poke_name, sizeof(poke_name))) {
 		printf("Error while writing pokemon name on EEPROM\n");
-		ir_disable();
-		return;
+		goto finish;
 	}
 
 	// Finally, trigger the event
@@ -434,12 +419,12 @@ void poke_gift_pokemon(pokemon_data poke_data, pokemon_extradata poke_extra)
 
 	if (!recv_pokepacket(&pkt_ack) || pkt_ack.header.opcode != CMD_EVENTPOKE) {
 		printf("Error while triggering the pokemon event\n");
-		ir_disable();
-		return;
+		goto finish;
 	}
 
 	printf("SUCCESS!\n");
 
+finish:
 	ir_disable();
 }
 
@@ -448,35 +433,30 @@ void poke_dump_rom()
 	poke_packet pkt_ack;
 	u8 *rom_dump;
 	u16 i = 0;
+
+	rom_dump = (u8 *) malloc(ROM_SIZE);
+	if (!rom_dump) {
+		printf("Error while allocating memory\n");
+		goto finish;
+	}
 	
 	ir_enable();
 
 	if (!poke_init_session()) {
 		printf("Error while establishing session\n");
-		ir_disable();
-		return;
-	}
-
-	rom_dump = (u8 *) malloc(ROM_SIZE);
-	if (!rom_dump) {
-		printf("Error while allocating memory\n");
-		ir_disable();
-		return;
+		goto finish;
 	}
 
 	if (!poke_upload_and_trigger_exploit(rom_dump_payload, sizeof(rom_dump_payload))) {
 		printf("Error while uploading or triggering the exploit\n");
-		ir_disable();
-		return;
+		goto finish;
 	}
 
 	printf("Dumping ROM\n");
 	while (i < ROM_SIZE) {
 		if (!recv_pokepacket(&pkt_ack) || pkt_ack.header.opcode != 0xAA) {
 			printf("\nError while receiving data at 0x%04X\n", i);
-			free(rom_dump);
-			ir_disable();
-			return;
+			goto finish;
 		}
 		memcpy(rom_dump + i, pkt_ack.payload, pkt_ack.payload_size);
 		i += pkt_ack.payload_size;
@@ -484,7 +464,6 @@ void poke_dump_rom()
 		progress_bar(i, ROM_SIZE, 25);
 	}
 	printf("Dump finished!\n");
-	ir_disable();
 
 	if (i == ROM_SIZE) {
 		FILE *f = fopen("PWROM.bin", "wb");
@@ -500,6 +479,8 @@ void poke_dump_rom()
 		}
 	}
 
+finish:
+	ir_disable();
 	free(rom_dump);
 }
 
@@ -508,15 +489,13 @@ void poke_dump_eeprom()
 	u16 addr = 0;
 	u8 buf[0x80];
 
+	FILE *f = fopen("PWEEPROM.bin", "wb");
 	ir_enable();
 
 	if (!poke_init_session()) {
 		printf("Error while establishing session\n");
-		ir_disable();
-		return;
+		goto finish;
 	}
-
-	FILE *f = fopen("PWEEPROM.bin", "wb");
 
 	printf("Dumping EEPROM\n");
 	for (u32 i = 0; i < 512; i++) {
@@ -524,9 +503,7 @@ void poke_dump_eeprom()
 
 		if (!poke_eeprom_read(buf, addr, 0x80)) {
 			printf("\nError while reading EEPROM at 0x%04X\n", addr);
-			ir_disable();
-			fclose(f);
-			return;
+			goto finish;
 		}
 
 		fwrite(buf, 1, 0x80, f);
@@ -535,6 +512,7 @@ void poke_dump_eeprom()
 	printf("Dump finished!\n");
 	printf("EEPROM dumped to PWEEPROM.bin\n");
 
+finish:
 	ir_disable();
 	fclose(f);
 }
