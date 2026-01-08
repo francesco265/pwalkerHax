@@ -11,6 +11,7 @@ You might also be interested in my other project [**RtcPwalker**](https://github
 At the moment, the following features are implemented or planned:
 - [x] **Add watts**
 - [x] **Set today steps**
+- [x] **Set total steps to 9.999.999**
 - [x] **Gift an event item**
 - [x] **Gift an event Pokemon**
 - [x] **Dump ROM**
