@@ -51,7 +51,10 @@ bool updates_download()
 		return false;
 	}
 
-	FILE *fp = fopen("pwalkerHax_latest.3dsx", "wb");
+	char filename[64];
+	sprintf(filename, "pwalkerHax_%s.3dsx", latest_version);
+
+	FILE *fp = fopen(filename, "wb");
 	u8 *buffer = (u8 *) malloc(0x2000);
 	u32 total, current = 0, downloaded = 0;
 

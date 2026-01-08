@@ -335,7 +335,7 @@ enum operation ui_update()
 		} else if (kDown & KEY_SELECT && updates_available()) {
 			printf("Downloading new version...\n");
 			if (updates_download())
-				printf("New version saved as pwalkerHax_latest.3dsx!\n");
+				printf("New version of pwalkerHax downloaded!\nDelete this version and open the new one!\n");
 			else
 				printf("Download failed!\n");
 		} else if (kDown & KEY_Y && g_state == IN_SELECTION) {
